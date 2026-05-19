@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import './lib/env';
 import express from 'express';
 import { pool } from './db/connection';
 import seriesRouter from './routes/series';

@@ -19,7 +19,7 @@
  *   npx tsx jobs/fetchFX.ts --full
  */
 
-import 'dotenv/config';
+import '../lib/env';
 import axios from 'axios';
 import { pool } from '../db/connection';
 import { logFetch } from '../db/queries/fetchLog';

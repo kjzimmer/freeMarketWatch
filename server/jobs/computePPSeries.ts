@@ -20,7 +20,7 @@
  *   npx tsx jobs/computePPSeries.ts
  */
 
-import 'dotenv/config';
+import '../lib/env';
 import { pool } from '../db/connection';
 import { calculateTHM } from '../lib/thm';
 import {

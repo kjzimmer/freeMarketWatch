@@ -14,7 +14,7 @@ const STALE_THRESHOLD_DAYS = 2;
 
 // GET /api/health
 router.get('/', async (_req: Request, res: Response) => {
-  const sources = ['FRED_CPI', 'FRED_FX', 'CoinGecko_BTC', 'YahooFinance', 'compute_pp_series'];
+  const sources = ['FRED_CPI', 'FRED_FX', 'CryptoCompare_BTC', 'YahooFinance', 'compute_pp_series'];
 
   const { rows } = await pool.query<{
     source: string;

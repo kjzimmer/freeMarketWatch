@@ -12,7 +12,7 @@
  *   npx tsx jobs/fetchCPI.ts --full    # force full re-fetch
  */
 
-import 'dotenv/config';
+import '../lib/env';
 import axios from 'axios';
 import { pool } from '../db/connection';
 import { logFetch } from '../db/queries/fetchLog';

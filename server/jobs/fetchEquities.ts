@@ -1,35 +1,62 @@
 /**
- * fetchEquities.ts — Fetches daily closing prices for equities and ETFs
- * from Yahoo Finance into market_price_history.
+ * fetchEquities.ts — Fetches daily adjusted closing prices for equities and ETFs
+ * from the Yahoo Finance v8 chart API into market_price_history.
  *
  * Tickers: AAPL, MSFT, GOOGL, AMZN, NVDA, META, TSLA (Mag 7)
  *           TLT, GLD, TIPS (risk-off ETFs)
  *
+ * Uses Yahoo Finance's v8 chart API directly via axios (not the yahoo-finance2 library,
+ * which Yahoo has rate-limited against). A browser User-Agent is required.
+ *
  * Bootstrap run (no data for a ticker): fetches 10 years of history.
  * Incremental run: fetches from latest stored date to today.
  *
- * Rate limiting: 1 request/second between tickers (Yahoo Finance is unofficial).
+ * Rate limiting: 2 second pause between tickers to avoid 429s.
  *
  * Safe to re-run: all inserts are upserts.
  *
  * Usage:
  *   npx tsx jobs/fetchEquities.ts
- *   npx tsx jobs/fetchEquities.ts --full    # force 10yr re-fetch for all tickers
+ *   npx tsx jobs/fetchEquities.ts --full
  */
 
-import 'dotenv/config';
-import yahooFinance from 'yahoo-finance2';
+import '../lib/env';
+import axios from 'axios';
 import { pool } from '../db/connection';
 import { logFetch } from '../db/queries/fetchLog';
 
 const SOURCE = 'YahooFinance';
+const YF_BASE = 'https://query1.finance.yahoo.com/v8/finance/chart';
+const HISTORY_YEARS = 10;
+
+const YF_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+  'Accept': 'application/json',
+};
 
 const TICKERS = [
-  'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'META', 'TSLA', // Mag 7
-  'TLT', 'GLD', 'TIPS',                                       // Risk-off ETFs
+  'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'META', 'TSLA',
+  'TLT', 'GLD', 'TIPS',
 ];
 
-const HISTORY_YEARS = 10;
+interface ChartResult {
+  timestamp: number[];
+  indicators: {
+    adjclose?: [{ adjclose: (number | null)[] }];
+    quote: [{ close: (number | null)[] }];
+  };
+}
+
+interface ChartResponse {
+  chart: {
+    result: ChartResult[] | null;
+    error: { code: string; description: string } | null;
+  };
+}
+
+function toUnixSeconds(dateStr: string): number {
+  return Math.floor(new Date(dateStr).getTime() / 1000);
+}
 
 function tenYearsAgo(): string {
   const d = new Date();
@@ -37,10 +64,8 @@ function tenYearsAgo(): string {
   return d.toISOString().split('T')[0];
 }
 
-function yesterday(): string {
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
-  return d.toISOString().split('T')[0];
+function today(): string {
+  return new Date().toISOString().split('T')[0];
 }
 
 async function getLatestStoredDate(ticker: string): Promise<Date | null> {
@@ -53,21 +78,37 @@ async function getLatestStoredDate(ticker: string): Promise<Date | null> {
 
 async function fetchTicker(
   ticker: string,
-  period1: string,
-  period2: string
+  period1Str: string,
+  period2Str: string
 ): Promise<{ date: string; value: number }[]> {
-  const results = await yahooFinance.historical(ticker, {
-    period1,
-    period2,
-    interval: '1d',
+  const p1 = toUnixSeconds(period1Str);
+  const p2 = toUnixSeconds(period2Str);
+  const url = `${YF_BASE}/${ticker}?interval=1d&period1=${p1}&period2=${p2}`;
+
+  const { data } = await axios.get<ChartResponse>(url, {
+    headers: YF_HEADERS,
+    timeout: 30_000,
   });
 
-  return results
-    .filter((r) => r.adjClose != null)
-    .map((r) => ({
-      date: r.date.toISOString().split('T')[0],
-      value: r.adjClose as number,
-    }));
+  if (data.chart.error) {
+    throw new Error(`Yahoo Finance error for ${ticker}: ${data.chart.error.description}`);
+  }
+
+  const result = data.chart.result?.[0];
+  if (!result) throw new Error(`No data returned for ${ticker}`);
+
+  const timestamps = result.timestamp;
+  // Prefer adjusted close; fall back to unadjusted close
+  const closes: (number | null)[] =
+    result.indicators.adjclose?.[0]?.adjclose ??
+    result.indicators.quote[0].close;
+
+  return timestamps
+    .map((ts, i) => ({
+      date: new Date(ts * 1000).toISOString().split('T')[0],
+      value: closes[i] as number,
+    }))
+    .filter((r) => r.value != null && !isNaN(r.value));
 }
 
 async function upsertPrices(
@@ -97,7 +138,7 @@ function sleep(ms: number): Promise<void> {
 
 async function fetchOneTicker(ticker: string, forceFullFetch: boolean): Promise<void> {
   let period1: string;
-  const period2 = yesterday();
+  const period2 = today();
 
   if (forceFullFetch) {
     period1 = tenYearsAgo();
@@ -107,12 +148,11 @@ async function fetchOneTicker(ticker: string, forceFullFetch: boolean): Promise<
       console.log(`[fetchEquities] No data for ${ticker} — bootstrapping ${HISTORY_YEARS} years`);
       period1 = tenYearsAgo();
     } else {
-      // Start from latest stored date (will re-fetch that day and forward)
       period1 = latestDate.toISOString().split('T')[0];
     }
   }
 
-  const endpoint = `yahooFinance.historical(${ticker}, ${period1}..${period2})`;
+  const endpoint = `${YF_BASE}/${ticker}?interval=1d&period1=${period1}&period2=${period2}`;
 
   try {
     console.log(`[fetchEquities] Fetching ${ticker} from ${period1} to ${period2}…`);
@@ -132,7 +172,7 @@ async function run(): Promise<void> {
   const forceFullFetch = process.argv.includes('--full');
   if (forceFullFetch) console.log('[fetchEquities] --full flag set: fetching 10yr history for all tickers');
 
-  let failedTickers: string[] = [];
+  const failedTickers: string[] = [];
 
   for (const ticker of TICKERS) {
     try {
@@ -140,9 +180,7 @@ async function run(): Promise<void> {
     } catch {
       failedTickers.push(ticker);
     }
-
-    // Respect unofficial rate limit: 1 req/sec
-    await sleep(1_100);
+    await sleep(2_000);
   }
 
   await pool.end();
