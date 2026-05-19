@@ -1,0 +1,31 @@
+{
+  "name": "freemarketwatch-server",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "db:setup": "psql \"$DATABASE_URL\" -f db/schema.sql",
+    "jobs:fetch-cpi": "tsx jobs/fetchCPI.ts",
+    "jobs:fetch-fx": "tsx jobs/fetchFX.ts",
+    "jobs:fetch-btc": "tsx jobs/fetchBTC.ts",
+    "jobs:fetch-equities": "tsx jobs/fetchEquities.ts",
+    "jobs:compute-pp": "tsx jobs/computePPSeries.ts"
+  },
+  "dependencies": {
+    "axios": "^1.7.9",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "node-cron": "^3.0.3",
+    "pg": "^8.13.3",
+    "yahoo-finance2": "^2.13.3"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.10.7",
+    "@types/pg": "^8.11.10",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
+}
