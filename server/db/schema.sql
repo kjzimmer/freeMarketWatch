@@ -156,6 +156,7 @@ CREATE TABLE market_pp_series (
   ticker        VARCHAR(10)   NOT NULL,
   date          DATE          NOT NULL,
   pp_index      NUMERIC(16,6) NOT NULL,
+  nominal_index NUMERIC(16,6),           -- dollar-denominated index (no CPI deflation); NULL until recomputed
   window_years  SMALLINT      NOT NULL CHECK (window_years IN (1, 5, 10)),
   window_start  DATE          NOT NULL,
   computed_at   TIMESTAMPTZ   NOT NULL DEFAULT NOW(),

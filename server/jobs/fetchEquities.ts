@@ -39,6 +39,11 @@ const TICKERS = [
   'TLT', 'GLD', 'TIPS',
 ];
 
+// Internal ticker → Yahoo Finance symbol (where they differ)
+const YF_SYMBOL: Record<string, string> = {
+  TIPS: 'TIP', // iShares TIPS Bond ETF trades as TIP on Yahoo Finance
+};
+
 interface ChartResult {
   timestamp: number[];
   indicators: {
@@ -152,11 +157,12 @@ async function fetchOneTicker(ticker: string, forceFullFetch: boolean): Promise<
     }
   }
 
-  const endpoint = `${YF_BASE}/${ticker}?interval=1d&period1=${period1}&period2=${period2}`;
+  const yfSymbol = YF_SYMBOL[ticker] ?? ticker;
+  const endpoint = `${YF_BASE}/${yfSymbol}?interval=1d&period1=${period1}&period2=${period2}`;
 
   try {
-    console.log(`[fetchEquities] Fetching ${ticker} from ${period1} to ${period2}…`);
-    const rows = await fetchTicker(ticker, period1, period2);
+    console.log(`[fetchEquities] Fetching ${ticker} (YF: ${yfSymbol}) from ${period1} to ${period2}…`);
+    const rows = await fetchTicker(yfSymbol, period1, period2);
     const recordsAdded = await upsertPrices(ticker, rows);
     console.log(`[fetchEquities] ${ticker}: upserted ${recordsAdded} rows`);
     await logFetch({ source: SOURCE, endpoint, recordsAdded, success: true });
@@ -183,14 +189,17 @@ async function run(): Promise<void> {
     await sleep(2_000);
   }
 
-  await pool.end();
-
   if (failedTickers.length > 0) {
-    console.error(`[fetchEquities] Failed tickers: ${failedTickers.join(', ')}`);
-    process.exit(1);
+    throw new Error(`[fetchEquities] Failed tickers: ${failedTickers.join(', ')}`);
   }
 
   console.log('[fetchEquities] Done.');
 }
 
-run();
+export { run };
+
+if (require.main === module) {
+  run()
+    .then(() => pool.end())
+    .catch(() => pool.end().finally(() => process.exit(1)));
+}

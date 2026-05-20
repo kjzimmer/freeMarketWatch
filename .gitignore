@@ -15,9 +15,11 @@ client/build/
 # TypeScript incremental build info
 *.tsbuildinfo
 
-# Logs
+# Logs and temp output files
 *.log
 npm-debug.log*
+*_err.txt
+*_out.txt
 
 # OS
 .DS_Store

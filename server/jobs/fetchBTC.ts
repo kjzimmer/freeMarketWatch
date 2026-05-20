@@ -120,10 +120,14 @@ async function run(): Promise<void> {
     const message = err instanceof Error ? err.message : String(err);
     console.error(`[fetchBTC] Error: ${message}`);
     await logFetch({ source: SOURCE, endpoint, success: false, errorMsg: message });
-    process.exit(1);
-  } finally {
-    await pool.end();
+    throw err;
   }
 }
 
-run();
+export { run };
+
+if (require.main === module) {
+  run()
+    .then(() => pool.end())
+    .catch(() => pool.end().finally(() => process.exit(1)));
+}

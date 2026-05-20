@@ -99,6 +99,42 @@ export function currencyPurchasingPower(
 }
 
 // ─────────────────────────────────────────────
+// Nominal (dollar-denominated) versions
+// ─────────────────────────────────────────────
+
+/** Nominal index of a foreign currency vs USD: pure exchange rate change, no CPI. */
+export function currencyNominal(
+  fxSeries: DataPoint[],
+  windowStart: Date,
+  dates: Date[]
+): IndexPoint[] {
+  const startFX = interpolate(fxSeries, windowStart);
+  if (startFX === null || startFX === 0) return [];
+
+  return dates.map((date) => {
+    const fx = interpolate(fxSeries, date);
+    if (fx === null || fx === 0) return null;
+    return { date: date.toISOString().split('T')[0], value: 100 * (startFX / fx) };
+  }).filter((p): p is IndexPoint => p !== null);
+}
+
+/** Nominal index of a price-based asset (equity, ETF, BTC): pure price change, no CPI. */
+export function equityNominal(
+  priceSeries: DataPoint[],
+  windowStart: Date,
+  dates: Date[]
+): IndexPoint[] {
+  const startPrice = interpolate(priceSeries, windowStart);
+  if (startPrice === null || startPrice === 0) return [];
+
+  return dates.map((date) => {
+    const price = interpolate(priceSeries, date);
+    if (price === null) return null;
+    return { date: date.toISOString().split('T')[0], value: 100 * (price / startPrice) };
+  }).filter((p): p is IndexPoint => p !== null);
+}
+
+// ─────────────────────────────────────────────
 // Equity / ETF / BTC Purchasing Power
 // ─────────────────────────────────────────────
 

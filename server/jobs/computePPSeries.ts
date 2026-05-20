@@ -27,6 +27,8 @@ import {
   usdPurchasingPower,
   currencyPurchasingPower,
   equityPurchasingPower,
+  currencyNominal,
+  equityNominal,
   IndexPoint,
 } from '../lib/purchasing-power';
 import { DataPoint } from '../lib/interpolate';
@@ -94,7 +96,8 @@ async function insertPPSeries(
   ticker: string,
   windowYears: number,
   windowStart: Date,
-  points: IndexPoint[]
+  points: IndexPoint[],
+  nominalPoints?: IndexPoint[]
 ): Promise<void> {
   if (points.length === 0) return;
 
@@ -102,11 +105,23 @@ async function insertPPSeries(
   const values = points.map((p) => p.value);
   const windowStartStr = windowStart.toISOString().split('T')[0];
 
-  await pool.query(
-    `INSERT INTO market_pp_series (ticker, date, pp_index, window_years, window_start)
-     SELECT $1, unnest($2::date[]), unnest($3::numeric[]), $4, $5`,
-    [ticker, dates, values, windowYears, windowStartStr]
-  );
+  if (nominalPoints && nominalPoints.length > 0) {
+    // Build a lookup map so we can align nominal values to real dates
+    const nominalMap = new Map(nominalPoints.map((p) => [p.date, p.value]));
+    const nominalValues = dates.map((d) => nominalMap.get(d) ?? null);
+
+    await pool.query(
+      `INSERT INTO market_pp_series (ticker, date, pp_index, nominal_index, window_years, window_start)
+       SELECT $1, unnest($2::date[]), unnest($3::numeric[]), unnest($4::numeric[]), $5, $6`,
+      [ticker, dates, values, nominalValues, windowYears, windowStartStr]
+    );
+  } else {
+    await pool.query(
+      `INSERT INTO market_pp_series (ticker, date, pp_index, window_years, window_start)
+       SELECT $1, unnest($2::date[]), unnest($3::numeric[]), $4, $5`,
+      [ticker, dates, values, windowYears, windowStartStr]
+    );
+  }
 }
 
 // ─────────────────────────────────────────────
@@ -137,7 +152,8 @@ function monthlyDates(from: Date, to: Date): Date[] {
 async function computeTHM(windowYears: number, windowStart: Date, today: Date): Promise<void> {
   await deletePPSeries('THM', windowYears);
   const points = calculateTHM(windowStart, today);
-  await insertPPSeries('THM', windowYears, windowStart, points);
+  // THM is a real benchmark — nominal_index mirrors pp_index (same line in both views)
+  await insertPPSeries('THM', windowYears, windowStart, points, points);
   console.log(`  THM [${windowYears}Y]: ${points.length} points`);
 }
 
@@ -149,8 +165,13 @@ async function computeUSD(
 ): Promise<void> {
   const dates = monthlyDates(windowStart, today);
   const points = usdPurchasingPower(cpiSeries, windowStart, dates);
+  // USD nominal is always 100 flat — storing it but filtered out of nominal currency view
+  const nominalPoints: IndexPoint[] = dates.map((d) => ({
+    date: d.toISOString().split('T')[0],
+    value: 100,
+  }));
   await deletePPSeries('USD', windowYears);
-  await insertPPSeries('USD', windowYears, windowStart, points);
+  await insertPPSeries('USD', windowYears, windowStart, points, nominalPoints);
   console.log(`  USD [${windowYears}Y]: ${points.length} points`);
 }
 
@@ -161,15 +182,15 @@ async function computeCurrency(
   today: Date,
   cpiSeries: DataPoint[]
 ): Promise<void> {
-  // Load FX with a 90-day buffer before window start for interpolation accuracy
   const fxFrom = new Date(windowStart);
   fxFrom.setDate(fxFrom.getDate() - 90);
   const fxSeries = await loadFX(ticker, fxFrom);
 
   const dates = monthlyDates(windowStart, today);
   const points = currencyPurchasingPower(fxSeries, cpiSeries, windowStart, dates);
+  const nominalPoints = currencyNominal(fxSeries, windowStart, dates);
   await deletePPSeries(ticker, windowYears);
-  await insertPPSeries(ticker, windowYears, windowStart, points);
+  await insertPPSeries(ticker, windowYears, windowStart, points, nominalPoints);
   console.log(`  ${ticker} [${windowYears}Y]: ${points.length} points`);
 }
 
@@ -180,7 +201,6 @@ async function computeEquity(
   today: Date,
   cpiSeries: DataPoint[]
 ): Promise<void> {
-  // Load price with a 90-day buffer before window start
   const priceFrom = new Date(windowStart);
   priceFrom.setDate(priceFrom.getDate() - 90);
   const priceSeries = await loadPrices(ticker, priceFrom);
@@ -190,13 +210,13 @@ async function computeEquity(
     return;
   }
 
-  // For BTC: if window starts before earliest BTC data, shift effective start
   const effectiveStart = priceSeries[0].date > windowStart ? priceSeries[0].date : windowStart;
   const dates = monthlyDates(effectiveStart, today);
 
   const points = equityPurchasingPower(priceSeries, cpiSeries, effectiveStart, dates);
+  const nominalPoints = equityNominal(priceSeries, effectiveStart, dates);
   await deletePPSeries(ticker, windowYears);
-  await insertPPSeries(ticker, windowYears, windowStart, points);
+  await insertPPSeries(ticker, windowYears, windowStart, points, nominalPoints);
   console.log(`  ${ticker} [${windowYears}Y]: ${points.length} points (data from ${effectiveStart.toISOString().split('T')[0]})`);
 }
 
@@ -249,10 +269,14 @@ async function run(): Promise<void> {
     const message = err instanceof Error ? err.message : String(err);
     console.error(`[computePP] Fatal error: ${message}`);
     await logFetch({ source: SOURCE, success: false, errorMsg: message });
-    process.exit(1);
-  } finally {
-    await pool.end();
+    throw err;
   }
 }
 
-run();
+export { run };
+
+if (require.main === module) {
+  run()
+    .then(() => pool.end())
+    .catch(() => pool.end().finally(() => process.exit(1)));
+}

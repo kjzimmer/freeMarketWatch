@@ -53,11 +53,13 @@ router.get('/:ticker', async (req: Request, res: Response) => {
   return res.json({ success: true, data: { ticker, window: windowYears, data } });
 });
 
-// GET /api/series/group/:group?window=10&btcAs=currency
+// GET /api/series/group/:group?window=10&btcAs=currency&view=real
 router.get('/group/:group', async (req: Request, res: Response) => {
   const group = req.params.group.toLowerCase();
   const windowYears = parseWindow(req.query['window'] ?? 10);
   const btcAs = (req.query['btcAs'] as string | undefined)?.toLowerCase() ?? 'currency';
+  const rawView = (req.query['view'] as string | undefined)?.toLowerCase() ?? 'real';
+  const view: 'real' | 'nominal' = rawView === 'nominal' ? 'nominal' : 'real';
 
   if (!windowYears) {
     return res.status(400).json({ success: false, error: 'window must be 1, 5, or 10' });
@@ -85,11 +87,19 @@ router.get('/group/:group', async (req: Request, res: Response) => {
     tickers = tickers.filter((t) => t !== 'BTC');
   }
 
+  // In nominal view, USD is always 100 — meaningless on the currency chart, so omit it
+  if (view === 'nominal' && group === 'currency') {
+    tickers = tickers.filter((t) => t !== 'USD');
+  }
+
   // Fetch all series for these tickers in one query (exclude THM — computed below)
   const dbTickers = tickers.filter((t) => t !== 'THM');
 
-  const { rows: ppRows } = await pool.query<{ ticker: string; date: Date; pp_index: string }>(
-    `SELECT ticker, date, pp_index
+  // Select the appropriate index column based on view
+  const indexCol = view === 'nominal' ? 'COALESCE(nominal_index, pp_index)' : 'pp_index';
+
+  const { rows: ppRows } = await pool.query<{ ticker: string; date: Date; index_value: string }>(
+    `SELECT ticker, date, ${indexCol} AS index_value
      FROM market_pp_series
      WHERE ticker = ANY($1) AND window_years = $2
      ORDER BY ticker, date ASC`,
@@ -103,18 +113,18 @@ router.get('/group/:group', async (req: Request, res: Response) => {
     if (!series[row.ticker]) series[row.ticker] = [];
     series[row.ticker].push({
       date: row.date.toISOString().split('T')[0],
-      value: parseFloat(row.pp_index),
+      value: parseFloat(row.index_value),
     });
   }
 
-  // Add THM computed series
+  // THM: always the real benchmark regardless of view
   const windowStart = new Date();
   windowStart.setUTCFullYear(windowStart.getUTCFullYear() - windowYears);
   series['THM'] = calculateTHM(windowStart, new Date());
 
   return res.json({
     success: true,
-    data: { group, window: windowYears, btcAs, series },
+    data: { group, window: windowYears, btcAs, view, series },
   });
 });
 

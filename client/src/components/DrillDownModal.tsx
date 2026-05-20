@@ -1,0 +1,212 @@
+import type { PanelGroup } from '../types';
+
+interface DrillDownModalProps {
+  group: PanelGroup;
+  onClose: () => void;
+}
+
+const METHODOLOGY: Record<PanelGroup, {
+  title: string;
+  sources: { name: string; detail: string }[];
+  calculation: string;
+  limitations: string;
+}> = {
+  currency: {
+    title: 'World Currencies — Methodology',
+    sources: [
+      { name: 'CPI deflator', detail: 'FRED CPIAUCSL — monthly, back to 1913' },
+      { name: 'USD/EUR', detail: 'FRED DEXUSEU — daily spot rate' },
+      { name: 'USD/JPY', detail: 'FRED DEXJPUS — daily spot rate' },
+      { name: 'USD/GBP', detail: 'FRED DEXUSUK — daily spot rate' },
+      { name: 'USD/CNY', detail: 'FRED DEXCHUS — daily spot rate' },
+      { name: 'Bitcoin', detail: 'CryptoCompare daily OHLCV — back to 2010' },
+    ],
+    calculation: `USD Purchasing Power: 100 × (CPI_start / CPI_t)
+The dollar loses purchasing power as CPI rises. This line slopes downward — the steeper the slope, the faster real debasement.
+
+Other Currencies: 100 × (FX_start / FX_t) × (CPI_start / CPI_t)
+Exchange rate movement vs USD multiplied by the USD's own purchasing power change. A currency that strengthens against the dollar AND in which goods haven't gotten more expensive does well. Most fiat currencies fail both tests simultaneously.
+
+THM (benchmark): 100 × (1.02)^years_elapsed
+The 2% represents the natural productivity-driven deflation of a sound economy. In a non-debased system, improvements in production flow through to consumers as lower prices. The pre-Fed US economy (1870–1913) and the electronics sector are historical examples.`,
+    limitations: `CPI is an imperfect deflator — it is subject to methodological revision, basket changes, and political pressure. Substitution effects, hedonic adjustments, and owner's equivalent rent calculations all affect the measured rate. The true loss of purchasing power experienced by most households is likely higher than CPI suggests.
+
+FX data is priced in USD. This means all purchasing power calculations pass through the dollar as an intermediary — a future version may price assets directly in neutral units.`,
+  },
+  riskoff: {
+    title: 'Risk-Off Assets — Methodology',
+    sources: [
+      { name: 'TLT', detail: 'iShares 20+ Year Treasury Bond ETF — Yahoo Finance v8 API' },
+      { name: 'GLD', detail: 'SPDR Gold Shares ETF — Yahoo Finance v8 API' },
+      { name: 'TIPS', detail: 'iShares TIPS Bond ETF — Yahoo Finance v8 API' },
+      { name: 'MM', detail: 'FRED TB3MS — 3-month T-bill rate (data pending)' },
+      { name: 'CPI deflator', detail: 'FRED CPIAUCSL — monthly, back to 1913' },
+    ],
+    calculation: `All ETF/Asset Purchasing Power: 100 × (price_t / price_start) × (CPI_start / CPI_t)
+The adjusted closing price (split and dividend adjusted) is used to capture total return. This is then deflated by CPI to convert nominal return into real purchasing power.
+
+Gold (GLD) represents the traditional hard money store of value. Its real performance against THM reveals whether it truly preserves purchasing power or merely tracks inflation.
+
+Long Treasuries (TLT) represent the "safe haven" bond allocation. In a period of rising rates and persistent inflation, the result is instructive.
+
+TIPS are explicitly inflation-linked, so their real return should theoretically track closer to zero. Whether they keep pace with THM (+2%) is the question.`,
+    limitations: `ETF prices include management fees which slightly drag returns relative to holding the underlying asset directly. GLD's expense ratio (~0.40%/yr) means it slightly underperforms spot gold over long periods. These fees are included in the comparison — the chart shows what an investor actually received.
+
+Money Market (MM) and Cash data are pending — rate series require additional conversion logic to produce a price index.`,
+  },
+  riskon: {
+    title: 'Risk-On Assets (Mag 7) — Methodology',
+    sources: [
+      { name: 'AAPL, MSFT, GOOGL, AMZN, NVDA, META, TSLA', detail: 'Yahoo Finance v8 chart API — adjusted close, daily, 10 years' },
+      { name: 'Bitcoin', detail: 'CryptoCompare daily OHLCV — back to 2010' },
+      { name: 'CPI deflator', detail: 'FRED CPIAUCSL — monthly, back to 1913' },
+    ],
+    calculation: `Equity Real Return: 100 × (price_t / price_start) × (CPI_start / CPI_t)
+Adjusted closing prices (accounting for splits and dividends) are deflated by CPI to yield real purchasing power. An equity "beats hard money" if its real return exceeds THM (+2%/yr compounded).
+
+The Mag 7 are selected as the most productive public companies in history by market capitalization. The question is not whether they are good businesses — they clearly are — but whether their equity returns constitute genuine hard money performance or nominal-price growth that partially reflects dollar debasement.
+
+Log scale is recommended for this panel: NVDA's ~134x real return over 10 years compresses all other lines to near-zero on a linear scale.`,
+    limitations: `Past equity performance is highly concentrated in a handful of winners. Survivorship bias is significant — these are the companies that won. A basket of all large-cap equities would show substantially lower returns.
+
+Dividends are included via adjusted close price. Tax treatment of dividends is not accounted for — after-tax real returns would be lower for taxable accounts.`,
+  },
+};
+
+export default function DrillDownModal({ group, onClose }: DrillDownModalProps) {
+  const m = METHODOLOGY[group];
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0,0,0,0.75)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1000,
+        padding: '20px',
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: 'var(--bg-surface)',
+          border: '1px solid var(--border-accent)',
+          borderRadius: 12,
+          padding: 32,
+          maxWidth: 580,
+          width: '100%',
+          maxHeight: '80vh',
+          overflowY: 'auto',
+          fontFamily: 'var(--font-data)',
+        }}
+      >
+        {/* Header */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          marginBottom: 24,
+        }}>
+          <h2 style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: 16,
+            fontWeight: 700,
+            color: 'var(--text-primary)',
+            lineHeight: 1.3,
+          }}>
+            {m.title}
+          </h2>
+          <button
+            onClick={onClose}
+            style={{
+              color: 'var(--text-muted)',
+              fontSize: 18,
+              lineHeight: 1,
+              padding: '0 4px',
+              flexShrink: 0,
+              marginLeft: 16,
+            }}
+          >
+            ×
+          </button>
+        </div>
+
+        {/* Data Sources */}
+        <Section title="Data Sources">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {m.sources.map((s) => (
+              <div key={s.name} style={{ display: 'flex', gap: 12, alignItems: 'baseline' }}>
+                <span style={{
+                  color: 'var(--thm-green)',
+                  fontSize: 11,
+                  minWidth: 80,
+                  flexShrink: 0,
+                }}>
+                  {s.name}
+                </span>
+                <span style={{ color: 'var(--text-muted)', fontSize: 11, lineHeight: 1.5 }}>
+                  {s.detail}
+                </span>
+              </div>
+            ))}
+          </div>
+        </Section>
+
+        {/* Calculation */}
+        <Section title="Calculation Method">
+          <pre style={{
+            whiteSpace: 'pre-wrap',
+            fontSize: 11,
+            color: 'var(--text-secondary)',
+            lineHeight: 1.7,
+            fontFamily: 'var(--font-data)',
+          }}>
+            {m.calculation}
+          </pre>
+        </Section>
+
+        {/* Limitations */}
+        <Section title="Limitations & Disclosures">
+          <p style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.7 }}>
+            {m.limitations}
+          </p>
+        </Section>
+
+        {/* Last Updated */}
+        <div style={{
+          marginTop: 20,
+          paddingTop: 16,
+          borderTop: '1px solid var(--border-subtle)',
+          fontSize: 10,
+          color: 'var(--text-faint)',
+        }}>
+          THM 2% figure is theoretically motivated and subject to revision. CPI is an acknowledged imperfect deflator.
+          Data updated daily. · Free Market Watch v1.0
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div style={{ marginBottom: 20 }}>
+      <div style={{
+        fontSize: 10,
+        color: 'var(--text-muted)',
+        letterSpacing: '0.12em',
+        textTransform: 'uppercase',
+        marginBottom: 10,
+        paddingBottom: 6,
+        borderBottom: '1px solid var(--border-subtle)',
+      }}>
+        {title}
+      </div>
+      {children}
+    </div>
+  );
+}

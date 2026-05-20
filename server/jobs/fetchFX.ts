@@ -153,9 +153,14 @@ async function run(): Promise<void> {
     }
   }
 
-  await pool.end();
-  if (exitCode !== 0) process.exit(exitCode);
+  if (exitCode !== 0) throw new Error('[fetchFX] One or more series failed — see logs above');
   console.log('[fetchFX] Done.');
 }
 
-run();
+export { run };
+
+if (require.main === module) {
+  run()
+    .then(() => pool.end())
+    .catch(() => pool.end().finally(() => process.exit(1)));
+}
