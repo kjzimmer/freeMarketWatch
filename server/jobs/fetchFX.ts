@@ -162,5 +162,5 @@ export { run };
 if (require.main === module) {
   run()
     .then(() => pool.end())
-    .catch(() => pool.end().finally(() => process.exit(1)));
+    .catch((err) => { console.error('[fetchFX] fatal:', err.message); pool.end().finally(() => process.exit(1)); });
 }
