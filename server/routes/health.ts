@@ -34,7 +34,8 @@ router.get('/', async (_req: Request, res: Response) => {
   const statuses: SourceStatus[] = sources.map((source) => {
     const row = statusMap.get(source);
     if (!row) {
-      return { source, lastFetch: null, success: null, stale: true };
+      // Never run — fresh deployment, not a failure
+      return { source, lastFetch: null, success: null, stale: false };
     }
     const ageMs = now.getTime() - row.fetched_at.getTime();
     const ageDays = ageMs / (1000 * 60 * 60 * 24);
@@ -46,11 +47,13 @@ router.get('/', async (_req: Request, res: Response) => {
     };
   });
 
-  const allHealthy = statuses.every((s) => !s.stale);
+  const anyStale = statuses.some((s) => s.stale);
+  const neverRun = statuses.every((s) => s.lastFetch === null);
+  const status = anyStale ? 'degraded' : neverRun ? 'initializing' : 'healthy';
 
-  return res.status(allHealthy ? 200 : 503).json({
-    success: allHealthy,
-    data: { status: allHealthy ? 'healthy' : 'degraded', sources: statuses },
+  return res.status(anyStale ? 503 : 200).json({
+    success: !anyStale,
+    data: { status, sources: statuses },
   });
 });
 
