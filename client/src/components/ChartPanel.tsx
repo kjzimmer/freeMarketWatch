@@ -365,7 +365,7 @@ function PanelHeader({ config, logScale, onLog, onMethod }: PanelHeaderProps) {
         <div style={{
           fontFamily: 'var(--font-data)',
           fontSize: 10,
-          color: 'var(--text-faint)',
+          color: 'var(--text-secondary)',
           letterSpacing: '0.04em',
         }}>
           {config.subtitle}

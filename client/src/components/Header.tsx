@@ -15,52 +15,17 @@ export default function Header({ window, btcAs, onWindowChange, onBTCChange }: H
       borderBottom: '1px solid var(--border-default)',
       background: 'rgba(6,8,16,0.95)',
       backdropFilter: 'blur(12px)',
-      position: 'sticky',
-      top: 0,
-      zIndex: 100,
     }}>
       <div style={{
         maxWidth: 1600,
         margin: '0 auto',
-        padding: '20px 40px',
+        padding: '14px 40px',
         display: 'flex',
-        alignItems: 'flex-start',
-        justifyContent: 'space-between',
+        alignItems: 'center',
+        justifyContent: 'flex-end',
         gap: 24,
         flexWrap: 'wrap',
       }}>
-        {/* Wordmark */}
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-            <div style={{
-              width: 10, height: 10,
-              borderRadius: '50%',
-              background: 'var(--thm-green)',
-              boxShadow: '0 0 10px var(--thm-green)',
-              animation: 'thmPulse 3s ease-in-out infinite',
-              flexShrink: 0,
-            }} />
-            <span style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 22,
-              fontWeight: 800,
-              color: 'var(--text-primary)',
-              letterSpacing: '-0.01em',
-            }}>
-              FREE MARKET WATCH
-            </span>
-          </div>
-          <div style={{
-            fontFamily: 'var(--font-data)',
-            fontSize: 11,
-            color: 'var(--text-muted)',
-            letterSpacing: '0.08em',
-            paddingLeft: 20,
-          }}>
-            Purchasing power as the universal benchmark
-          </div>
-        </div>
-
         {/* Controls */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 12 }}>
           {/* Timeframe selector */}

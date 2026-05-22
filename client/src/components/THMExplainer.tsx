@@ -55,7 +55,7 @@ export default function THMExplainer() {
             padding: '0 16px 14px',
             fontFamily: 'var(--font-data)',
             fontSize: 11,
-            color: 'var(--text-muted)',
+            color: 'var(--text-secondary)',
             lineHeight: 1.7,
             maxWidth: 900,
           }}>
