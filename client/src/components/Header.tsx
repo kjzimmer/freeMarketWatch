@@ -22,10 +22,32 @@ export default function Header({ window, btcAs, onWindowChange, onBTCChange }: H
         padding: '14px 40px',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'flex-end',
+        justifyContent: 'space-between',
         gap: 24,
         flexWrap: 'wrap',
       }}>
+        {/* Dashboard headline */}
+        <div>
+          <div style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: 18,
+            fontWeight: 700,
+            color: 'var(--text-primary)',
+            letterSpacing: '-0.01em',
+            marginBottom: 3,
+          }}>
+            Purchasing Power Dashboard
+          </div>
+          <div style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: 13,
+            color: 'var(--text-secondary)',
+            lineHeight: 1.4,
+          }}>
+            Every currency and asset indexed to 100 — measured against hard money, not the dollar.
+          </div>
+        </div>
+
         {/* Controls */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 12 }}>
           {/* Timeframe selector */}
