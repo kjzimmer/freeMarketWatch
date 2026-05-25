@@ -44,7 +44,7 @@ export default function Header({ window, btcAs, onWindowChange, onBTCChange }: H
             color: 'var(--text-secondary)',
             lineHeight: 1.4,
           }}>
-            Every currency and asset indexed to 100 — measured against hard money, not the dollar.
+            Every currency and asset measured as % change — benchmarked against hard money, not the dollar.
           </div>
         </div>
 
