@@ -103,12 +103,13 @@ export default function About() {
             color: 'var(--text-primary)',
             marginBottom: 8,
           }}>
-            The index <span style={dataRef}>(start = 100)</span>
+            The baseline <span style={dataRef}>(start = 0%)</span>
           </div>
           <p style={{ ...prose, marginBottom: 0 }}>
-            Every chart starts everything at 100 — regardless of actual price. This lets you compare a $2
-            commodity with a $500 stock on the same scale. What matters is how much it changed, not what
-            it costs.
+            Every chart starts at 0% — regardless of actual price. The vertical axis shows pure
+            percentage change from the start of the selected window. This lets you compare a $2
+            commodity with a $500 stock on the same scale. What matters is direction and magnitude,
+            not price level.
           </p>
         </div>
 

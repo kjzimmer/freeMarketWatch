@@ -148,7 +148,7 @@ export default function Header({ window, btcAs, onWindowChange, onBTCChange }: H
             fontSize: 10,
             color: 'var(--text-muted)',
           }}>
-            <span>Index: 100 = start of window</span>
+            <span>% change from start of window</span>
             <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
               <svg width="20" height="8" viewBox="0 0 20 8">
                 <line x1="0" y1="4" x2="20" y2="4"

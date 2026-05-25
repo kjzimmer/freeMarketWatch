@@ -45,7 +45,6 @@ function ChartTooltip({ active, payload, label }: TooltipProps) {
         {label}
       </div>
       {sorted.map((entry) => {
-        const pct = entry.value - 100;
         const isThm = entry.name === 'THM';
         return (
           <div key={entry.name} style={{
@@ -70,10 +69,10 @@ function ChartTooltip({ active, payload, label }: TooltipProps) {
             </span>
             <span style={{
               fontSize: 11,
-              color: pct >= 0 ? 'var(--gain-green)' : 'var(--loss-red)',
+              color: entry.value >= 0 ? 'var(--gain-green)' : 'var(--loss-red)',
               fontWeight: 600,
             }}>
-              {entry.value.toFixed(1)}
+              {entry.value >= 0 ? '+' : ''}{entry.value.toFixed(1)}%
             </span>
           </div>
         );
@@ -110,7 +109,7 @@ function EndpointSummary({ chartData, tickers, hiddenSeries, onToggle }: Endpoin
       marginTop: 4,
     }}>
       {entries.map(({ ticker, value }) => {
-        const pct = ((value ?? 100) - 100);
+        const pct = value ?? 0;
         const isHidden = hiddenSeries.has(ticker);
         const isThm = ticker === 'THM';
         const color = SERIES_COLORS[ticker] ?? '#888';
@@ -274,14 +273,18 @@ export default function ChartPanel({ group, window, btcAs }: ChartPanelProps) {
               tick={{ fill: 'var(--text-faint)', fontSize: 9, fontFamily: 'var(--font-data)' }}
               axisLine={false}
               tickLine={false}
-              tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(Math.round(v))}
+              tickFormatter={(v: number) => {
+                if (v === 0) return '0%';
+                if (Math.abs(v) >= 1000) return `${v > 0 ? '+' : ''}${(v / 1000).toFixed(1)}k%`;
+                return `${v > 0 ? '+' : ''}${Math.round(v)}%`;
+              }}
             />
             <Tooltip
               content={<ChartTooltip />}
               cursor={{ stroke: 'rgba(255,255,255,0.08)', strokeWidth: 1 }}
             />
             <ReferenceLine
-              y={100}
+              y={0}
               stroke="rgba(255,255,255,0.12)"
               strokeDasharray="4 4"
             />
