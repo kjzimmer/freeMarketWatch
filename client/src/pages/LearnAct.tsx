@@ -365,64 +365,83 @@ function ComparisonMatrix({
   );
 }
 
-function FaqBlocks({ items }: { items: { question: string; answer: string }[] }) {
+function FaqBlocks({ items }: { items: { question: string; answer: string; category?: string }[] }) {
   const [open, setOpen] = useState<number | null>(null);
   return (
     <div style={{ margin: '28px 0', display: 'flex', flexDirection: 'column', gap: 8 }}>
-      {items.map(({ question, answer }, i) => (
-        <div key={i} style={{
-          border: '1px solid var(--border-default)',
-          borderRadius: 8,
-          overflow: 'hidden',
-        }}>
-          <button
-            onClick={() => setOpen(open === i ? null : i)}
-            style={{
-              width: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '14px 18px',
-              background: open === i ? 'rgba(168,255,120,0.04)' : 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              textAlign: 'left',
-              gap: 12,
-            }}
-          >
-            <span style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 14,
-              fontWeight: 600,
-              color: 'var(--text-primary)',
-              lineHeight: 1.4,
-            }}>
-              {question}
-            </span>
-            <span style={{
-              fontFamily: 'var(--font-data)',
-              fontSize: 16,
-              color: 'var(--thm-green)',
-              flexShrink: 0,
-              transition: 'transform 0.2s',
-              transform: open === i ? 'rotate(45deg)' : 'rotate(0deg)',
-            }}>
-              +
-            </span>
-          </button>
-          {open === i && (
+      {items.map(({ question, answer, category }, i) => {
+        const showCategory = category && (i === 0 || items[i - 1].category !== category);
+        return (
+          <div key={i}>
+            {showCategory && (
+              <div style={{
+                fontFamily: 'var(--font-data)',
+                fontSize: 10,
+                fontWeight: 700,
+                color: 'var(--text-muted)',
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                marginTop: i > 0 ? 20 : 0,
+                marginBottom: 8,
+              }}>
+                {category}
+              </div>
+            )}
             <div style={{
-              padding: '4px 18px 16px',
-              fontFamily: 'var(--font-display)',
-              fontSize: 14,
-              color: 'var(--text-secondary)',
-              lineHeight: 1.7,
+              border: '1px solid var(--border-default)',
+              borderRadius: 8,
+              overflow: 'hidden',
             }}>
-              {answer}
+              <button
+                onClick={() => setOpen(open === i ? null : i)}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '14px 18px',
+                  background: open === i ? 'rgba(168,255,120,0.04)' : 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  gap: 12,
+                }}
+              >
+                <span style={{
+                  fontFamily: 'var(--font-display)',
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: 'var(--text-primary)',
+                  lineHeight: 1.4,
+                }}>
+                  {question}
+                </span>
+                <span style={{
+                  fontFamily: 'var(--font-data)',
+                  fontSize: 16,
+                  color: 'var(--thm-green)',
+                  flexShrink: 0,
+                  transition: 'transform 0.2s',
+                  transform: open === i ? 'rotate(45deg)' : 'rotate(0deg)',
+                }}>
+                  +
+                </span>
+              </button>
+              {open === i && (
+                <div style={{
+                  padding: '4px 18px 16px',
+                  fontFamily: 'var(--font-display)',
+                  fontSize: 14,
+                  color: 'var(--text-secondary)',
+                  lineHeight: 1.7,
+                }}>
+                  {answer}
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      ))}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -463,6 +482,7 @@ const TAG_COLORS: Record<string, string> = {
   Bitcoin: '#f7931a',
   Monetary: '#a8ff78',
   Foundation: '#60a5fa',
+  'Own work': '#c084fc',
 };
 
 function BookCards({ items }: { items: { title: string; author: string; description: string; tag: string }[] }) {
@@ -522,8 +542,8 @@ function BookCards({ items }: { items: { title: string; author: string; descript
 function CtaPanels({
   left, right,
 }: {
-  left: { title: string; label: string; to: string };
-  right: { title: string; label: string; note: string };
+  left: { title: string; label: string; to: string; body?: string };
+  right: { title: string; label: string; note: string; body?: string };
 }) {
   return (
     <div style={{
@@ -546,10 +566,17 @@ function CtaPanels({
             fontSize: 16,
             fontWeight: 700,
             color: 'var(--text-primary)',
-            marginBottom: 16,
+            marginBottom: left.body ? 12 : 16,
           }}>
             {left.title}
           </div>
+          {left.body && (
+            <p style={{
+              ...P, fontSize: 13, marginBottom: 16, textAlign: 'left',
+            }}>
+              {left.body}
+            </p>
+          )}
           <div style={{
             fontFamily: 'var(--font-data)',
             fontSize: 12,
@@ -573,10 +600,17 @@ function CtaPanels({
           fontSize: 16,
           fontWeight: 700,
           color: 'var(--text-primary)',
-          marginBottom: 16,
+          marginBottom: right.body ? 12 : 16,
         }}>
           {right.title}
         </div>
+        {right.body && (
+          <p style={{
+            ...P, fontSize: 13, marginBottom: 16, textAlign: 'left',
+          }}>
+            {right.body}
+          </p>
+        )}
         <div style={{
           fontFamily: 'var(--font-data)',
           fontSize: 11,
