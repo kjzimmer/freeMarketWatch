@@ -693,7 +693,7 @@ export default function LearnAct() {
             {ACTS.map((a) => (
               <div
                 key={a.n}
-                onClick={() => navigate(`/learn/act/${a.n}`)}
+                onClick={() => navigate(`/learn/sound-money/act/${a.n}`)}
                 style={{
                   flex: 1,
                   height: 4,
@@ -754,7 +754,7 @@ export default function LearnAct() {
         }}>
           {prevAct ? (
             <Link
-              to={`/learn/act/${prevAct.n}`}
+              to={`/learn/sound-money/act/${prevAct.n}`}
               style={{
                 fontFamily: 'var(--font-data)',
                 fontSize: 11,
@@ -771,7 +771,7 @@ export default function LearnAct() {
 
           {nextAct ? (
             <Link
-              to={`/learn/act/${nextAct.n}`}
+              to={`/learn/sound-money/act/${nextAct.n}`}
               style={{
                 fontFamily: 'var(--font-data)',
                 fontSize: 11,
@@ -829,7 +829,7 @@ export default function LearnAct() {
         {/* Back to series */}
         <div style={{ marginTop: 24, textAlign: 'center' }}>
           <Link
-            to="/learn"
+            to="/learn/sound-money"
             style={{
               fontFamily: 'var(--font-data)',
               fontSize: 11,
