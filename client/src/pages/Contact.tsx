@@ -304,7 +304,7 @@ export default function Contact() {
               The six-act education series takes you from the basics of trade all the way to Bitcoin.
             </p>
             <Link
-              to="/learn"
+              to="/lens/fiat"
               style={{
                 fontFamily: 'var(--font-data)',
                 fontSize: 11,

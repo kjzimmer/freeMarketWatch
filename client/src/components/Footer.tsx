@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 
 const FOOTER_LINKS = [
   { to: '/', label: 'Dashboard' },
-  { to: '/learn', label: 'Learn' },
+  { to: '/lens', label: 'The Lens' },
   { to: '/about', label: 'About' },
   { to: '/contact', label: 'Contact' },
 ];

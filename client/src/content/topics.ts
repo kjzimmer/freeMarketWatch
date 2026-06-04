@@ -13,7 +13,7 @@ export const TOPICS: Topic[] = [
     title: 'THM — The Benchmark That Changes Everything',
     description: "How we calculate the fixed ruler, why it's hard, and what three economic frameworks say the answer should be. An honest look at an open question.",
     tag: 'Methodology',
-    route: '/learn/thm',
+    route: '/lens/thm',
     cta: 'Read →',
   },
   {
@@ -21,7 +21,7 @@ export const TOPICS: Topic[] = [
     title: 'From Trade to Bitcoin: The Case for Sound Money',
     description: "A six-part awareness series. Follow the thread from trade through specialization, money, debasement, and why Bitcoin is the first monetary system to fix what gold couldn't.",
     tag: '6-part series',
-    route: '/learn/sound-money',
+    route: '/lens/fiat',
     cta: 'Start series →',
   },
 ];

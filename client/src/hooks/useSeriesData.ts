@@ -57,7 +57,7 @@ export function useSeriesData(
   for (const [ticker, points] of Object.entries(rawData.series)) {
     for (const { date, value } of points) {
       if (!dateMap.has(date)) dateMap.set(date, { date });
-      (dateMap.get(date) as ChartDataPoint)[ticker] = value - 100;
+      (dateMap.get(date) as ChartDataPoint)[ticker] = value;
     }
   }
 

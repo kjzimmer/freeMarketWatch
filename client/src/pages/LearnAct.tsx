@@ -664,7 +664,7 @@ export default function LearnAct() {
         <div style={{ fontFamily: 'var(--font-data)', color: 'var(--text-muted)', marginBottom: 16 }}>
           Act not found.
         </div>
-        <Link to="/learn" style={{ color: 'var(--thm-green)', fontFamily: 'var(--font-data)', fontSize: 12 }}>
+        <Link to="/lens/fiat" style={{ color: 'var(--thm-green)', fontFamily: 'var(--font-data)', fontSize: 12 }}>
           ← Back to series
         </Link>
       </div>
@@ -693,7 +693,7 @@ export default function LearnAct() {
             {ACTS.map((a) => (
               <div
                 key={a.n}
-                onClick={() => navigate(`/learn/sound-money/act/${a.n}`)}
+                onClick={() => navigate(`/lens/fiat/act/${a.n}`)}
                 style={{
                   flex: 1,
                   height: 4,
@@ -720,7 +720,7 @@ export default function LearnAct() {
           textTransform: 'uppercase',
           marginBottom: 10,
         }}>
-          Education Series
+          Component 1 · Why the Fiat Lens Distorts
         </div>
         <h1 style={{
           fontFamily: 'var(--font-display)',
@@ -754,7 +754,7 @@ export default function LearnAct() {
         }}>
           {prevAct ? (
             <Link
-              to={`/learn/sound-money/act/${prevAct.n}`}
+              to={`/lens/fiat/act/${prevAct.n}`}
               style={{
                 fontFamily: 'var(--font-data)',
                 fontSize: 11,
@@ -771,7 +771,7 @@ export default function LearnAct() {
 
           {nextAct ? (
             <Link
-              to={`/learn/sound-money/act/${nextAct.n}`}
+              to={`/lens/fiat/act/${nextAct.n}`}
               style={{
                 fontFamily: 'var(--font-data)',
                 fontSize: 11,
@@ -829,7 +829,7 @@ export default function LearnAct() {
         {/* Back to series */}
         <div style={{ marginTop: 24, textAlign: 'center' }}>
           <Link
-            to="/learn/sound-money"
+            to="/lens/fiat"
             style={{
               fontFamily: 'var(--font-data)',
               fontSize: 11,
@@ -838,7 +838,7 @@ export default function LearnAct() {
               letterSpacing: '0.06em',
             }}
           >
-            ← Back to series overview
+            ← Component 1 overview
           </Link>
         </div>
 

@@ -11,10 +11,14 @@
  *   window_end   = today
  *   All series indexed to 100 at window_start.
  *
- * THM is computed analytically (no DB read).
- * USD is computed from market_cpi_history.
- * Currencies from market_fx_history + market_cpi_history.
- * Equities/ETFs/BTC from market_price_history + market_cpi_history.
+ * THM is computed from market_m2_history + market_gdp_history.
+ * USD is deflated by M2/GDP (same series as THM — ensures USD × THM = 100²).
+ * Currencies from market_fx_history, deflated by M2/GDP.
+ * Equities/ETFs/BTC from market_price_history, deflated by M2/GDP.
+ *
+ * The M2/GDP monthly series is loaded once per window and shared across all
+ * asset computations. CPI (market_cpi_history) is not used here — it remains
+ * for the THM_CPI variant on /lens/thm only.
  *
  * Usage:
  *   npx tsx jobs/computePPSeries.ts
@@ -22,6 +26,7 @@
 
 import '../lib/env';
 import { pool } from '../db/connection';
+import { calculateTHM_M2GDP, loadM2GDPMonthly } from '../lib/thm-m2gdp';
 import { calculateTHM } from '../lib/thm';
 import {
   usdPurchasingPower,
@@ -50,16 +55,6 @@ const PRICE_TICKERS = [
 // ─────────────────────────────────────────────
 // DB read helpers
 // ─────────────────────────────────────────────
-
-async function loadCPI(from: Date): Promise<DataPoint[]> {
-  const { rows } = await pool.query<{ date: Date; cpi_value: string }>(
-    `SELECT date, cpi_value FROM market_cpi_history
-     WHERE date >= $1
-     ORDER BY date ASC`,
-    [from.toISOString().split('T')[0]]
-  );
-  return rows.map((r) => ({ date: new Date(r.date), value: parseFloat(r.cpi_value) }));
-}
 
 async function loadFX(currencyCode: string, from: Date): Promise<DataPoint[]> {
   const { rows } = await pool.query<{ date: Date; rate_vs_usd: string }>(
@@ -151,20 +146,27 @@ function monthlyDates(from: Date, to: Date): Date[] {
 
 async function computeTHM(windowYears: number, windowStart: Date, today: Date): Promise<void> {
   await deletePPSeries('THM', windowYears);
-  const points = calculateTHM(windowStart, today);
-  // THM is a real benchmark — nominal_index mirrors pp_index (same line in both views)
+  let points: IndexPoint[];
+  try {
+    points = await calculateTHM_M2GDP(windowStart, today);
+    console.log(`  THM [${windowYears}Y]: ${points.length} points (M2/GDP basis)`);
+  } catch (err) {
+    // Fall back to analytical formula if M2/GDP data not yet loaded
+    console.warn(`  THM [${windowYears}Y]: M2/GDP unavailable (${(err as Error).message}), using analytical fallback`);
+    points = calculateTHM(windowStart, today);
+    console.log(`  THM [${windowYears}Y]: ${points.length} points (analytical fallback)`);
+  }
   await insertPPSeries('THM', windowYears, windowStart, points, points);
-  console.log(`  THM [${windowYears}Y]: ${points.length} points`);
 }
 
 async function computeUSD(
   windowYears: number,
   windowStart: Date,
   today: Date,
-  cpiSeries: DataPoint[]
+  m2gdpSeries: DataPoint[]
 ): Promise<void> {
   const dates = monthlyDates(windowStart, today);
-  const points = usdPurchasingPower(cpiSeries, windowStart, dates);
+  const points = usdPurchasingPower(m2gdpSeries, windowStart, dates);
   // USD nominal is always 100 flat — storing it but filtered out of nominal currency view
   const nominalPoints: IndexPoint[] = dates.map((d) => ({
     date: d.toISOString().split('T')[0],
@@ -180,14 +182,14 @@ async function computeCurrency(
   windowYears: number,
   windowStart: Date,
   today: Date,
-  cpiSeries: DataPoint[]
+  m2gdpSeries: DataPoint[]
 ): Promise<void> {
   const fxFrom = new Date(windowStart);
   fxFrom.setDate(fxFrom.getDate() - 90);
   const fxSeries = await loadFX(ticker, fxFrom);
 
   const dates = monthlyDates(windowStart, today);
-  const points = currencyPurchasingPower(fxSeries, cpiSeries, windowStart, dates);
+  const points = currencyPurchasingPower(fxSeries, m2gdpSeries, windowStart, dates);
   const nominalPoints = currencyNominal(fxSeries, windowStart, dates);
   await deletePPSeries(ticker, windowYears);
   await insertPPSeries(ticker, windowYears, windowStart, points, nominalPoints);
@@ -199,7 +201,7 @@ async function computeEquity(
   windowYears: number,
   windowStart: Date,
   today: Date,
-  cpiSeries: DataPoint[]
+  m2gdpSeries: DataPoint[]
 ): Promise<void> {
   const priceFrom = new Date(windowStart);
   priceFrom.setDate(priceFrom.getDate() - 90);
@@ -213,7 +215,7 @@ async function computeEquity(
   const effectiveStart = priceSeries[0].date > windowStart ? priceSeries[0].date : windowStart;
   const dates = monthlyDates(effectiveStart, today);
 
-  const points = equityPurchasingPower(priceSeries, cpiSeries, effectiveStart, dates);
+  const points = equityPurchasingPower(priceSeries, m2gdpSeries, effectiveStart, dates);
   const nominalPoints = equityNominal(priceSeries, effectiveStart, dates);
   await deletePPSeries(ticker, windowYears);
   await insertPPSeries(ticker, windowYears, windowStart, points, nominalPoints);
@@ -235,26 +237,31 @@ async function run(): Promise<void> {
       const windowStart = windowStartDate(windowYears);
       console.log(`\n[computePP] Window ${windowYears}Y (${windowStart.toISOString().split('T')[0]} → ${today.toISOString().split('T')[0]})`);
 
-      // Load CPI once per window (with buffer for interpolation)
-      const cpiFrom = new Date(windowStart);
-      cpiFrom.setDate(cpiFrom.getDate() - 90);
-      const cpiSeries = await loadCPI(cpiFrom);
-      console.log(`  CPI loaded: ${cpiSeries.length} monthly points`);
+      // Load M2/GDP monthly series once per window (shared by THM + all asset deflation)
+      const m2gdpFrom = new Date(windowStart);
+      m2gdpFrom.setDate(m2gdpFrom.getDate() - 90);
+      let m2gdpSeries: DataPoint[] = [];
+      try {
+        m2gdpSeries = await loadM2GDPMonthly(m2gdpFrom, today);
+        console.log(`  M2/GDP loaded: ${m2gdpSeries.length} monthly points`);
+      } catch (err) {
+        console.warn(`  M2/GDP unavailable (${(err as Error).message}) — asset PP will be empty`);
+      }
 
       // THM
       await computeTHM(windowYears, windowStart, today);
 
       // USD
-      await computeUSD(windowYears, windowStart, today, cpiSeries);
+      await computeUSD(windowYears, windowStart, today, m2gdpSeries);
 
       // Foreign currencies
       for (const ticker of FX_TICKERS) {
-        await computeCurrency(ticker, windowYears, windowStart, today, cpiSeries);
+        await computeCurrency(ticker, windowYears, windowStart, today, m2gdpSeries);
       }
 
       // Equities, ETFs, BTC
       for (const ticker of PRICE_TICKERS) {
-        await computeEquity(ticker, windowYears, windowStart, today, cpiSeries);
+        await computeEquity(ticker, windowYears, windowStart, today, m2gdpSeries);
       }
     }
 

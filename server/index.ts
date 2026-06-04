@@ -6,6 +6,7 @@ import { pool } from './db/connection';
 import seriesRouter from './routes/series';
 import instrumentsRouter from './routes/instruments';
 import healthRouter from './routes/health';
+import learnRouter from './routes/learn';
 import { startScheduler } from './jobs/scheduler';
 
 const app = express();
@@ -24,6 +25,7 @@ app.use(cors({
 app.use('/api/series', seriesRouter);
 app.use('/api/instruments', instrumentsRouter);
 app.use('/api/health', healthRouter);
+app.use('/api/learn', learnRouter);
 
 // Serve the React build in production — must be after API routes
 if (isProd) {

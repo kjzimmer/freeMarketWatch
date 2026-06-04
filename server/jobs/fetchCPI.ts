@@ -18,7 +18,7 @@ import { pool } from '../db/connection';
 import { logFetch } from '../db/queries/fetchLog';
 
 const SOURCE = 'FRED_CPI';
-const SERIES = 'CPIAUCSL';
+const SERIES = 'CPIAUCNS'; // Not seasonally adjusted — starts Jan 1913; CPIAUCSL only goes back to 1947
 const FRED_BASE = 'https://api.stlouisfed.org/fred/series/observations';
 const FULL_HISTORY_START = '1913-01-01';
 

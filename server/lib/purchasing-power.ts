@@ -6,10 +6,13 @@
  * instrument buy, relative to what it could buy at the window start?
  *
  * Formulas:
- *   USD:      100 × (CPI_start / CPI_t)
- *   Currency: 100 × (FX_start / FX_t) × (CPI_start / CPI_t)
- *   Equity:   100 × (price_t / price_start) × (CPI_start / CPI_t)
- *   BTC:      Same as equity (priced in USD, then CPI-adjusted)
+ *   USD:      100 × (M2GDP_start / M2GDP_t)
+ *   Currency: 100 × (FX_start / FX_t) × (M2GDP_start / M2GDP_t)
+ *   Equity:   100 × (price_t / price_start) × (M2GDP_start / M2GDP_t)
+ *   BTC:      Same as equity (priced in USD, then M2/GDP-adjusted)
+ *
+ * M2GDP_t = M2_t / GDP_t, linearly interpolated to monthly using the same
+ * series that drives the THM benchmark — ensuring USD × THM = 100² at every point.
  *
  * All FX rates are stored as units of foreign currency per 1 USD.
  * Lower rate = foreign currency appreciated vs USD.
@@ -28,26 +31,26 @@ export interface IndexPoint {
 
 /**
  * Real purchasing power of holding USD over time.
- * Slopes downward as CPI rises.
+ * Slopes downward as M2/GDP ratio rises (more debasement).
  *
- * @param cpiSeries  Sorted ascending CPI monthly data
+ * @param m2gdpSeries  Sorted ascending M2/GDP monthly data
  * @param windowStart  Index start date
  * @param dates  Target dates for which to compute the index
  */
 export function usdPurchasingPower(
-  cpiSeries: DataPoint[],
+  m2gdpSeries: DataPoint[],
   windowStart: Date,
   dates: Date[]
 ): IndexPoint[] {
-  const startCPI = interpolate(cpiSeries, windowStart);
-  if (startCPI === null || startCPI === 0) return [];
+  const startM2GDP = interpolate(m2gdpSeries, windowStart);
+  if (startM2GDP === null || startM2GDP === 0) return [];
 
   return dates.map((date) => {
-    const cpi = interpolate(cpiSeries, date);
-    if (cpi === null || cpi === 0) return null;
+    const m2gdp = interpolate(m2gdpSeries, date);
+    if (m2gdp === null || m2gdp === 0) return null;
     return {
       date: date.toISOString().split('T')[0],
-      value: 100 * (startCPI / cpi),
+      value: 100 * (startM2GDP / m2gdp),
     };
   }).filter((p): p is IndexPoint => p !== null);
 }
@@ -61,39 +64,39 @@ export function usdPurchasingPower(
  *
  * Accounts for:
  *   1. Exchange rate movement vs USD
- *   2. USD CPI (as the common deflator)
+ *   2. M2/GDP deflation (same deflator as THM benchmark)
  *
  * FX rate convention: units of foreign currency per 1 USD.
  *   Lower FX rate at date t vs start → foreign currency strengthened → PP up.
  *
- * @param fxSeries   Sorted ascending FX daily data (units of foreign per 1 USD)
- * @param cpiSeries  Sorted ascending CPI monthly data
- * @param windowStart  Index start date
+ * @param fxSeries      Sorted ascending FX daily data (units of foreign per 1 USD)
+ * @param m2gdpSeries   Sorted ascending M2/GDP monthly data
+ * @param windowStart   Index start date
  * @param dates  Target dates for which to compute the index
  */
 export function currencyPurchasingPower(
   fxSeries: DataPoint[],
-  cpiSeries: DataPoint[],
+  m2gdpSeries: DataPoint[],
   windowStart: Date,
   dates: Date[]
 ): IndexPoint[] {
   const startFX = interpolate(fxSeries, windowStart);
-  const startCPI = interpolate(cpiSeries, windowStart);
-  if (startFX === null || startFX === 0 || startCPI === null || startCPI === 0) return [];
+  const startM2GDP = interpolate(m2gdpSeries, windowStart);
+  if (startFX === null || startFX === 0 || startM2GDP === null || startM2GDP === 0) return [];
 
   return dates.map((date) => {
     const fx = interpolate(fxSeries, date);
-    const cpi = interpolate(cpiSeries, date);
-    if (fx === null || fx === 0 || cpi === null || cpi === 0) return null;
+    const m2gdp = interpolate(m2gdpSeries, date);
+    if (fx === null || fx === 0 || m2gdp === null || m2gdp === 0) return null;
 
     // Foreign currency appreciation vs USD (lower units per USD = appreciated)
     const fxFactor = startFX / fx;
-    // USD purchasing power change (lower CPI_start/CPI_t = more CPI inflation)
-    const cpiFactor = startCPI / cpi;
+    // M2/GDP purchasing power factor (higher M2GDP = more debasement = lower PP)
+    const m2gdpFactor = startM2GDP / m2gdp;
 
     return {
       date: date.toISOString().split('T')[0],
-      value: 100 * fxFactor * cpiFactor,
+      value: 100 * fxFactor * m2gdpFactor,
     };
   }).filter((p): p is IndexPoint => p !== null);
 }
@@ -102,7 +105,7 @@ export function currencyPurchasingPower(
 // Nominal (dollar-denominated) versions
 // ─────────────────────────────────────────────
 
-/** Nominal index of a foreign currency vs USD: pure exchange rate change, no CPI. */
+/** Nominal index of a foreign currency vs USD: pure exchange rate change, no deflation. */
 export function currencyNominal(
   fxSeries: DataPoint[],
   windowStart: Date,
@@ -118,7 +121,7 @@ export function currencyNominal(
   }).filter((p): p is IndexPoint => p !== null);
 }
 
-/** Nominal index of a price-based asset (equity, ETF, BTC): pure price change, no CPI. */
+/** Nominal index of a price-based asset (equity, ETF, BTC): pure price change, no deflation. */
 export function equityNominal(
   priceSeries: DataPoint[],
   windowStart: Date,
@@ -140,34 +143,34 @@ export function equityNominal(
 
 /**
  * Real purchasing power of holding an equity, ETF, or BTC.
- * Price is in USD; adjusted by CPI to get real return.
+ * Price is in USD; adjusted by M2/GDP to get real return.
  *
- * For BTC: data begins ~2013 (CoinGecko daily). If windowStart predates
+ * For BTC: data begins ~2010 (CryptoCompare daily). If windowStart predates
  * available BTC data, pass only the dates from when BTC data exists.
  * The frontend handles the gap gracefully (line begins late in the window).
  *
- * @param priceSeries  Sorted ascending daily price data (USD)
- * @param cpiSeries    Sorted ascending monthly CPI data
- * @param windowStart  Index start date
+ * @param priceSeries   Sorted ascending daily price data (USD)
+ * @param m2gdpSeries   Sorted ascending M2/GDP monthly data
+ * @param windowStart   Index start date
  * @param dates  Target dates for which to compute the index
  */
 export function equityPurchasingPower(
   priceSeries: DataPoint[],
-  cpiSeries: DataPoint[],
+  m2gdpSeries: DataPoint[],
   windowStart: Date,
   dates: Date[]
 ): IndexPoint[] {
   const startPrice = interpolate(priceSeries, windowStart);
-  const startCPI = interpolate(cpiSeries, windowStart);
-  if (startPrice === null || startPrice === 0 || startCPI === null || startCPI === 0) return [];
+  const startM2GDP = interpolate(m2gdpSeries, windowStart);
+  if (startPrice === null || startPrice === 0 || startM2GDP === null || startM2GDP === 0) return [];
 
   return dates.map((date) => {
     const price = interpolate(priceSeries, date);
-    const cpi = interpolate(cpiSeries, date);
-    if (price === null || cpi === null || cpi === 0) return null;
+    const m2gdp = interpolate(m2gdpSeries, date);
+    if (price === null || m2gdp === null || m2gdp === 0) return null;
 
     const nominalReturn = price / startPrice;
-    const realReturn = nominalReturn * (startCPI / cpi);
+    const realReturn = nominalReturn * (startM2GDP / m2gdp);
 
     return {
       date: date.toISOString().split('T')[0],

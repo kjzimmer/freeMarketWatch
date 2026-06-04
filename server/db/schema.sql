@@ -141,7 +141,7 @@ SELECT attach_updated_at_trigger('market_fx_history');
 
 -- Computed purchasing-power series — the primary read layer for the frontend
 -- Rebuilt daily by the compute-pp-series job (Job 5).
--- pp_index is always indexed to 100.00 at window_start.
+-- pp_index is M2/GDP-adjusted and indexed to 100.00 at window_start.
 -- window_years: 1, 5, or 10 — matches the frontend timeframe selector.
 -- window_start: the exact calendar start date for this computation batch.
 --
@@ -156,7 +156,7 @@ CREATE TABLE market_pp_series (
   ticker        VARCHAR(10)   NOT NULL,
   date          DATE          NOT NULL,
   pp_index      NUMERIC(16,6) NOT NULL,
-  nominal_index NUMERIC(16,6),           -- dollar-denominated index (no CPI deflation); NULL until recomputed
+  nominal_index NUMERIC(16,6),           -- dollar-denominated index (no deflation); NULL until recomputed
   window_years  SMALLINT      NOT NULL CHECK (window_years IN (1, 5, 10)),
   window_start  DATE          NOT NULL,
   computed_at   TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
@@ -172,6 +172,44 @@ CREATE INDEX idx_market_pp_window_date
   ON market_pp_series(window_years, date ASC);
 
 SELECT attach_updated_at_trigger('market_pp_series');
+
+
+-- M2 Money Supply — for THM methodology charts and calculations
+-- Annual averages sufficient for THM; FRED M2SL is monthly (1959–present)
+-- Pre-1959 values from Friedman & Schwartz static seed data
+-- date = first day of the reference year (e.g., 1913-01-01)
+CREATE TABLE market_m2_history (
+  id            SERIAL        PRIMARY KEY,
+  date          DATE          NOT NULL UNIQUE,
+  m2_billions   NUMERIC(16,4) NOT NULL,
+  source        VARCHAR(100)  NOT NULL,   -- 'FRED_M2SL', 'Friedman_Schwartz'
+  fetched_at    TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+  created_at    TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+  updated_at    TIMESTAMPTZ   NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_market_m2_date ON market_m2_history(date ASC);
+
+SELECT attach_updated_at_trigger('market_m2_history');
+
+
+-- Real GDP — for THM methodology charts and calculations
+-- Quarterly GDPC1 from FRED (1947–present); pre-1947 from BEA historical estimates
+-- Annual averages used; date = first day of the reference year (e.g., 1913-01-01)
+-- Units: billions of chained 2017 USD
+CREATE TABLE market_gdp_history (
+  id            SERIAL        PRIMARY KEY,
+  date          DATE          NOT NULL UNIQUE,
+  gdp_billions  NUMERIC(16,4) NOT NULL,
+  source        VARCHAR(100)  NOT NULL,   -- 'FRED_GDPC1', 'BEA_Historical'
+  fetched_at    TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+  created_at    TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+  updated_at    TIMESTAMPTZ   NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_market_gdp_date ON market_gdp_history(date ASC);
+
+SELECT attach_updated_at_trigger('market_gdp_history');
 
 
 -- ============================================================

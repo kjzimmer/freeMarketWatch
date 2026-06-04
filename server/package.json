@@ -7,11 +7,15 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "db:setup": "psql \"$DATABASE_URL\" -f db/schema.sql",
+    "db:migrate": "tsx db/migrate.ts",
     "jobs:fetch-cpi": "tsx jobs/fetchCPI.ts",
     "jobs:fetch-fx": "tsx jobs/fetchFX.ts",
     "jobs:fetch-btc": "tsx jobs/fetchBTC.ts",
     "jobs:fetch-equities": "tsx jobs/fetchEquities.ts",
-    "jobs:compute-pp": "tsx jobs/computePPSeries.ts"
+    "jobs:compute-pp": "tsx jobs/computePPSeries.ts",
+    "jobs:fetch-cpi-full": "tsx jobs/fetchCPI.ts --full",
+    "jobs:fetch-m2gdp": "tsx jobs/fetchM2GDP.ts",
+    "db:seed-thm": "tsx db/seeds/thm_historical_data.ts"
   },
   "dependencies": {
     "@types/cors": "^2.8.19",

@@ -17,7 +17,7 @@ import fs from 'fs';
 import path from 'path';
 import { pool } from './connection';
 
-const MIGRATIONS_DIR = path.join(process.cwd(), 'server', 'db', 'migrations');
+const MIGRATIONS_DIR = path.join(__dirname, 'migrations');
 
 async function run(): Promise<void> {
   const client = await pool.connect();

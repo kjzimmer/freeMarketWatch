@@ -1,4 +1,10 @@
 import { Link } from 'react-router-dom';
+import {
+  ResponsiveContainer, LineChart, Line, XAxis, YAxis,
+  Tooltip, ReferenceLine, CartesianGrid,
+} from 'recharts';
+import { useTHMChartData } from '../hooks/useTHMChartData';
+import type { THMVariantPoint, GapSeriesPoint } from '../hooks/useTHMChartData';
 
 const prose: React.CSSProperties = {
   fontFamily: 'var(--font-display)',
@@ -67,50 +73,326 @@ const problemLabel: React.CSSProperties = {
   marginBottom: 6,
 };
 
-function ChartPlaceholder({ title, note }: { title: string; note: string }) {
+const chartTooltipStyle: React.CSSProperties = {
+  background: 'rgba(10,12,18,0.95)',
+  border: '1px solid var(--border-accent)',
+  borderRadius: 8,
+  padding: '10px 14px',
+  fontFamily: 'var(--font-data)',
+};
+
+function ChartLabel({ title }: { title: string }) {
   return (
     <div style={{
+      fontFamily: 'var(--font-data)',
+      fontSize: 10,
+      color: 'var(--thm-green)',
+      letterSpacing: '0.12em',
+      textTransform: 'uppercase',
+      marginBottom: 8,
+      marginTop: 40,
+    }}>
+      {title}
+    </div>
+  );
+}
+
+function ChartLoading() {
+  return (
+    <div style={{
+      height: 320,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
       border: '1px dashed var(--border-default)',
       borderRadius: 10,
-      padding: '40px 24px',
-      margin: '28px 0',
-      textAlign: 'center',
-      background: 'rgba(255,255,255,0.01)',
+      margin: '12px 0 28px',
+      fontFamily: 'var(--font-data)',
+      fontSize: 11,
+      color: 'var(--text-muted)',
+      letterSpacing: '0.06em',
     }}>
+      Loading…
+    </div>
+  );
+}
+
+function ChartError({ msg }: { msg: string }) {
+  return (
+    <div style={{
+      height: 120,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      border: '1px dashed rgba(248,113,113,0.3)',
+      borderRadius: 10,
+      margin: '12px 0 28px',
+      fontFamily: 'var(--font-data)',
+      fontSize: 11,
+      color: '#f87171',
+    }}>
+      {msg}
+    </div>
+  );
+}
+
+// Chart 1 — The Three THM Lines, log scale
+function Chart1({ data }: { data: THMVariantPoint[] }) {
+  const chartData = data.map((d) => ({
+    year: d.year,
+    thm_cpi:   d.thm_cpi,
+    thm_m2gdp: d.thm_m2gdp,
+    thm_m2raw: d.thm_m2raw,
+    dollar:    100,
+  }));
+
+  return (
+    <div style={{ margin: '12px 0 28px' }}>
+      <ResponsiveContainer width="100%" height={360}>
+        <LineChart data={chartData} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
+          <CartesianGrid stroke="rgba(255,255,255,0.04)" strokeDasharray="3 3" vertical={false} />
+          <XAxis
+            dataKey="year"
+            tick={{ fontFamily: 'var(--font-data)', fontSize: 10, fill: 'var(--text-faint)' }}
+            tickLine={false}
+            axisLine={false}
+            tickFormatter={(v: number) => String(v)}
+            interval={9}
+          />
+          <YAxis
+            scale="log"
+            domain={[80, 'auto']}
+            tick={{ fontFamily: 'var(--font-data)', fontSize: 10, fill: 'var(--text-faint)' }}
+            tickLine={false}
+            axisLine={false}
+            width={52}
+            tickFormatter={(v: number) => {
+              if (v >= 100000) return `${(v / 1000).toFixed(0)}k`;
+              if (v >= 1000)   return `${(v / 1000).toFixed(1)}k`;
+              return String(Math.round(v));
+            }}
+          />
+          <Tooltip
+            contentStyle={chartTooltipStyle}
+            labelStyle={{ fontFamily: 'var(--font-data)', fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}
+            formatter={(value: number, name: string) => {
+              const labels: Record<string, string> = {
+                thm_cpi:   'THM — CPI',
+                thm_m2gdp: 'THM — M2/GDP',
+                thm_m2raw: 'THM — Raw M2',
+                dollar:    'Dollar (1913)',
+              };
+              return [value.toFixed(0), labels[name] ?? name];
+            }}
+          />
+          <ReferenceLine
+            x={1971}
+            stroke="rgba(255,255,255,0.15)"
+            strokeDasharray="4 4"
+            label={{ value: '1971', position: 'top', fill: 'var(--text-faint)', fontFamily: 'var(--font-data)', fontSize: 9 }}
+          />
+          {/* Dollar flat line at 100 */}
+          <Line dataKey="dollar"    stroke="rgba(255,255,255,0.2)" dot={false} strokeWidth={1} strokeDasharray="4 4" name="dollar" />
+          <Line dataKey="thm_cpi"   stroke="#60a5fa" dot={false} strokeWidth={1.5} name="thm_cpi" />
+          <Line dataKey="thm_m2gdp" stroke="#a8ff78" dot={false} strokeWidth={1.5} name="thm_m2gdp" />
+          <Line dataKey="thm_m2raw" stroke="#f7931a" dot={false} strokeWidth={1.5} name="thm_m2raw" />
+        </LineChart>
+      </ResponsiveContainer>
       <div style={{
+        display: 'flex',
+        gap: 20,
+        flexWrap: 'wrap',
+        marginTop: 12,
         fontFamily: 'var(--font-data)',
         fontSize: 10,
-        color: 'var(--thm-green)',
-        letterSpacing: '0.12em',
-        textTransform: 'uppercase',
-        marginBottom: 8,
-      }}>
-        Chart — Coming Soon
-      </div>
-      <div style={{
-        fontFamily: 'var(--font-display)',
-        fontSize: 14,
-        fontWeight: 700,
-        color: 'var(--text-primary)',
-        marginBottom: 6,
-      }}>
-        {title}
-      </div>
-      <div style={{
-        fontFamily: 'var(--font-display)',
-        fontSize: 12,
         color: 'var(--text-muted)',
-        lineHeight: 1.6,
-        maxWidth: 420,
-        margin: '0 auto',
+        letterSpacing: '0.04em',
       }}>
-        {note}
+        {[
+          { color: '#60a5fa', label: 'THM — Inflation Index (CPI)' },
+          { color: '#a8ff78', label: 'THM — M2/GDP' },
+          { color: '#f7931a', label: 'THM — Raw M2 (Austrian)' },
+          { color: 'rgba(255,255,255,0.3)', label: 'Dollar held as cash' },
+        ].map(({ color, label }) => (
+          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ width: 20, height: 1.5, background: color }} />
+            {label}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Chart 2 — Purchasing power of the 1913 dollar (THM inverted), linear scale
+function Chart2({ data }: { data: THMVariantPoint[] }) {
+  const chartData = data.map((d) => ({
+    year: d.year,
+    pp_cpi:    100 / d.thm_cpi * 100,
+    pp_m2gdp:  100 / d.thm_m2gdp * 100,
+    pp_m2raw:  100 / d.thm_m2raw * 100,
+  }));
+
+  // Find endpoint values for labels
+  const last = chartData[chartData.length - 1];
+  const endLabels = last ? [
+    { key: 'pp_cpi',   val: last.pp_cpi,   color: '#60a5fa', label: 'CPI' },
+    { key: 'pp_m2gdp', val: last.pp_m2gdp, color: '#a8ff78', label: 'M2/GDP' },
+    { key: 'pp_m2raw', val: last.pp_m2raw, color: '#f7931a', label: 'Raw M2' },
+  ] : [];
+
+  return (
+    <div style={{ margin: '12px 0 28px' }}>
+      <ResponsiveContainer width="100%" height={320}>
+        <LineChart data={chartData} margin={{ top: 8, right: 80, bottom: 8, left: 0 }}>
+          <CartesianGrid stroke="rgba(255,255,255,0.04)" strokeDasharray="3 3" vertical={false} />
+          <XAxis
+            dataKey="year"
+            tick={{ fontFamily: 'var(--font-data)', fontSize: 10, fill: 'var(--text-faint)' }}
+            tickLine={false}
+            axisLine={false}
+            tickFormatter={(v: number) => String(v)}
+            interval={9}
+          />
+          <YAxis
+            tick={{ fontFamily: 'var(--font-data)', fontSize: 10, fill: 'var(--text-faint)' }}
+            tickLine={false}
+            axisLine={false}
+            width={44}
+            tickFormatter={(v: number) => `${v.toFixed(v < 1 ? 2 : 0)}¢`}
+          />
+          <Tooltip
+            contentStyle={chartTooltipStyle}
+            labelStyle={{ fontFamily: 'var(--font-data)', fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}
+            formatter={(value: number, name: string) => {
+              const labels: Record<string, string> = {
+                pp_cpi:   'CPI method',
+                pp_m2gdp: 'M2/GDP method',
+                pp_m2raw: 'Raw M2 method',
+              };
+              return [`${value.toFixed(3)}¢`, labels[name] ?? name];
+            }}
+          />
+          <ReferenceLine
+            x={1971}
+            stroke="rgba(255,255,255,0.15)"
+            strokeDasharray="4 4"
+            label={{ value: '1971', position: 'top', fill: 'var(--text-faint)', fontFamily: 'var(--font-data)', fontSize: 9 }}
+          />
+          <Line dataKey="pp_cpi"   stroke="#60a5fa" dot={false} strokeWidth={1.5} name="pp_cpi" />
+          <Line dataKey="pp_m2gdp" stroke="#a8ff78" dot={false} strokeWidth={1.5} name="pp_m2gdp" />
+          <Line dataKey="pp_m2raw" stroke="#f7931a" dot={false} strokeWidth={1.5} name="pp_m2raw" />
+        </LineChart>
+      </ResponsiveContainer>
+      {endLabels.length > 0 && (
+        <div style={{
+          display: 'flex',
+          gap: 20,
+          flexWrap: 'wrap',
+          marginTop: 8,
+          fontFamily: 'var(--font-data)',
+          fontSize: 10,
+          color: 'var(--text-muted)',
+        }}>
+          {endLabels.map(({ key, val, color, label }) => (
+            <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ width: 16, height: 1.5, background: color }} />
+              <span>{label}:</span>
+              <span style={{ color }}>{val.toFixed(val < 0.01 ? 3 : 2)}¢</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Chart 3 — M2 index vs GDP index vs M2/GDP ratio (all 1913 = 100)
+function Chart3({ data }: { data: GapSeriesPoint[] }) {
+  return (
+    <div style={{ margin: '12px 0 28px' }}>
+      <ResponsiveContainer width="100%" height={320}>
+        <LineChart data={data} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
+          <CartesianGrid stroke="rgba(255,255,255,0.04)" strokeDasharray="3 3" vertical={false} />
+          <XAxis
+            dataKey="year"
+            tick={{ fontFamily: 'var(--font-data)', fontSize: 10, fill: 'var(--text-faint)' }}
+            tickLine={false}
+            axisLine={false}
+            tickFormatter={(v: number) => String(v)}
+            interval={9}
+          />
+          <YAxis
+            scale="log"
+            domain={[80, 'auto']}
+            tick={{ fontFamily: 'var(--font-data)', fontSize: 10, fill: 'var(--text-faint)' }}
+            tickLine={false}
+            axisLine={false}
+            width={52}
+            tickFormatter={(v: number) => {
+              if (v >= 10000) return `${(v / 1000).toFixed(0)}k`;
+              if (v >= 1000)  return `${(v / 1000).toFixed(1)}k`;
+              return String(Math.round(v));
+            }}
+          />
+          <Tooltip
+            contentStyle={chartTooltipStyle}
+            labelStyle={{ fontFamily: 'var(--font-data)', fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}
+            formatter={(value: number, name: string) => {
+              const labels: Record<string, string> = {
+                m2_index:    'M2 Index',
+                gdp_index:   'Real GDP Index',
+                ratio_index: 'M2/GDP Ratio',
+              };
+              return [value.toFixed(0), labels[name] ?? name];
+            }}
+          />
+          <ReferenceLine
+            x={1971}
+            stroke="rgba(255,255,255,0.15)"
+            strokeDasharray="4 4"
+            label={{ value: '1971', position: 'top', fill: 'var(--text-faint)', fontFamily: 'var(--font-data)', fontSize: 9 }}
+          />
+          <Line dataKey="m2_index"    stroke="#f7931a" dot={false} strokeWidth={1.5} name="m2_index" />
+          <Line dataKey="gdp_index"   stroke="#60a5fa" dot={false} strokeWidth={1.5} name="gdp_index" />
+          <Line dataKey="ratio_index" stroke="#a8ff78" dot={false} strokeWidth={1.5} strokeDasharray="5 3" name="ratio_index" />
+        </LineChart>
+      </ResponsiveContainer>
+      <div style={{
+        display: 'flex',
+        gap: 20,
+        flexWrap: 'wrap',
+        marginTop: 12,
+        fontFamily: 'var(--font-data)',
+        fontSize: 10,
+        color: 'var(--text-muted)',
+        letterSpacing: '0.04em',
+      }}>
+        {[
+          { color: '#f7931a', label: 'M2 Index (1913 = 100)', dashed: false },
+          { color: '#60a5fa', label: 'Real GDP Index (1913 = 100)', dashed: false },
+          { color: '#a8ff78', label: 'M2/GDP Ratio (1913 = 100)', dashed: true },
+        ].map(({ color, label, dashed }) => (
+          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <svg width="20" height="4">
+              <line
+                x1="0" y1="2" x2="20" y2="2"
+                stroke={color}
+                strokeWidth="1.5"
+                strokeDasharray={dashed ? '5 3' : undefined}
+              />
+            </svg>
+            {label}
+          </div>
+        ))}
       </div>
     </div>
   );
 }
 
 export default function LearnTHM() {
+  const { data, loading, error } = useTHMChartData();
+
   return (
     <div style={{ paddingTop: 56 }}>
       <div style={{ maxWidth: 720, margin: '0 auto', padding: '48px 40px 80px' }}>
@@ -278,10 +560,10 @@ export default function LearnTHM() {
         </p>
         <p style={prose}>
           The logic: a larger economy needs more money to facilitate more transactions. If real GDP
-          doubles and the money supply stays flat, prices fall by half — not because money was
-          debased, but because the same dollars are now doing twice as much work. That price decline
-          is healthy and real, but it isn't debasement. Debasement is the money growth <em>above</em> real
-          output growth — the excess that dilutes existing holders without backing new production.
+          doubles and the money supply stays flat, prices fall by half. So to keep prices stable,
+          the money supply needs to grow in line with GDP — and under this philosophy, that growth
+          is not debasement. Debasement is the money growth <em>above</em> real output growth —
+          the excess that dilutes existing holders without backing new production.
         </p>
         <p style={prose}>
           <strong style={{ color: 'var(--text-primary)' }}>The calculation over 111 years:</strong>
@@ -423,20 +705,20 @@ export default function LearnTHM() {
           where the benchmark should be.
         </p>
 
-        <ChartPlaceholder
-          title="Chart 1 — The Three THM Lines (1913–present, log scale)"
-          note="THM_CPI, THM_M2/GDP, and THM_Raw M2 on a single log-scale chart. A flat line at 100 represents the dollar held as cash. 1971 annotated."
-        />
+        <ChartLabel title="Chart 1 — The Three THM Lines (1913–present, log scale) · Index: 1913 = 100" />
+        {loading && <ChartLoading />}
+        {error && <ChartError msg={`Chart data unavailable: ${error}`} />}
+        {data && <Chart1 data={data.thm_variants} />}
 
-        <ChartPlaceholder
-          title="Chart 2 — Purchasing Power of the 1913 Dollar"
-          note="The inverse view: how much of its 1913 value the dollar retained under each measure. Three lines declining from 100 to ~3¢, ~2.3¢, and ~0.09¢."
-        />
+        <ChartLabel title="Chart 2 — Purchasing Power of the 1913 Dollar" />
+        {loading && <ChartLoading />}
+        {error && <ChartError msg={`Chart data unavailable: ${error}`} />}
+        {data && <Chart2 data={data.thm_variants} />}
 
-        <ChartPlaceholder
-          title="Chart 3 — The Productivity Deflation Gap"
-          note="Real GDP index vs M2 index vs M2/GDP ratio (all 1913 = 100). M2 grew 1,200×. The economy grew 27×. The gap is what sound money holders lost."
-        />
+        <ChartLabel title="Chart 3 — The Productivity Deflation Gap" />
+        {loading && <ChartLoading />}
+        {error && <ChartError msg={`Chart data unavailable: ${error}`} />}
+        {data && <Chart3 data={data.gap_series} />}
 
         {/* Summary table */}
         <hr style={{ border: 'none', borderTop: '1px solid var(--border-subtle)', margin: '40px 0 0' }} />

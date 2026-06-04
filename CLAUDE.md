@@ -16,7 +16,10 @@ The site has two audiences:
 - **The aware** — people who understand markets and want to see reality unfiltered by fiat framing
 - **The unaware** — people learning what money is and why debasement matters
 
-The full build specification is in `FreeMarketWatch_CC_Spec.md`. Read it in full before starting any phase of work.
+The companion documentation set is in `docs/`:
+- `FMW_Vision.md` — site purpose, THM definition, Lens structure, what is deferred
+- `FMW_Architecture.md` — technical reference: schema, data pipeline, API, deployment
+- `FMW_Content.md` — every route, its status, and its content source
 
 ---
 
@@ -33,55 +36,72 @@ The full build specification is in `FreeMarketWatch_CC_Spec.md`. Read it in full
 
 ---
 
-## Project Structure (target)
+## Project Structure (as-built)
 
 ```
 freemarketwatch/
 ├── CLAUDE.md                  ← this file
-├── FreeMarketWatch_CC_Spec.md ← full build specification
 ├── WEBDESIGN_SKILL.md         ← design system and aesthetic guide
 ├── .env                       ← secrets (never commit)
 ├── .env.example               ← committed template
 │
+├── docs/
+│   ├── FMW_Vision.md          ← site purpose and direction
+│   ├── FMW_Architecture.md    ← technical reference
+│   ├── FMW_Content.md         ← route/page inventory
+│   └── archive/               ← superseded briefing documents
+│
 ├── server/
-│   ├── index.ts               ← Express entry point
+│   ├── index.ts               ← Express entry point, cron scheduler
 │   ├── routes/
 │   │   ├── series.ts          ← /api/series endpoints
 │   │   ├── instruments.ts
-│   │   └── health.ts
+│   │   ├── health.ts
+│   │   └── learn.ts           ← /api/learn/thm-charts
 │   ├── db/
 │   │   ├── schema.sql         ← canonical schema
+│   │   ├── migrate.ts         ← migration runner
 │   │   ├── connection.ts
-│   │   └── queries/           ← typed query functions
+│   │   ├── migrations/        ← 001_initial_schema.sql, 002_m2_gdp_tables.sql
+│   │   ├── queries/
+│   │   └── seeds/             ← thm_historical_data.ts (M2/GDP pre-FRED)
 │   ├── jobs/
 │   │   ├── fetchCPI.ts
 │   │   ├── fetchFX.ts
 │   │   ├── fetchBTC.ts
 │   │   ├── fetchEquities.ts
+│   │   ├── fetchM2GDP.ts      ← M2 + GDP from FRED (weekly)
 │   │   └── computePPSeries.ts
 │   └── lib/
-│       ├── thm.ts             ← THM calculation
-│       ├── purchasing-power.ts ← PP index calculations
-│       └── interpolate.ts     ← date interpolation helpers
+│       ├── thm.ts             ← Analytical THM (2% fallback only)
+│       ├── thm-m2gdp.ts       ← M2/GDP-based THM (primary dashboard)
+│       ├── thm-variants.ts    ← Three-method comparison for /lens/thm charts
+│       ├── purchasing-power.ts
+│       └── interpolate.ts
 │
 ├── client/
 │   ├── src/
 │   │   ├── App.tsx
 │   │   ├── components/
+│   │   │   ├── NavBar.tsx     ← THE LENS dropdown
+│   │   │   ├── Footer.tsx
+│   │   │   ├── Header.tsx
 │   │   │   ├── ChartPanel.tsx
 │   │   │   ├── DrillDownModal.tsx
-│   │   │   ├── BTCToggle.tsx
-│   │   │   ├── TimeframeSelector.tsx
-│   │   │   └── LogScaleToggle.tsx
+│   │   │   └── THMExplainer.tsx
 │   │   ├── hooks/
 │   │   │   ├── useSeriesData.ts
-│   │   │   └── useBTCClassification.ts
+│   │   │   └── useTHMChartData.ts
+│   │   ├── pages/             ← Dashboard, About, Contact, LensHub, LensFiat,
+│   │   │                         LensTHM, LensInvesting, LearnAct
+│   │   ├── content/
+│   │   │   └── acts.ts        ← Six-act educational series
 │   │   └── types/
 │   │       └── index.ts
-│   └── public/
+│   └── public/                ← favicons, site.webmanifest, downloads/
 │
-└── docs/
-    └── methodology/           ← write-ups for drill-down modals
+└── scripts/
+    └── generate-favicons.js
 ```
 
 ---
@@ -89,29 +109,37 @@ freemarketwatch/
 ## Core Concepts — Must Understand Before Coding
 
 ### THM (Theoretical Hard Money)
-- Synthetic benchmark. Not fetched from any API. Computed.
-- Appreciates at exactly **+2% per year**, compounded
-- Represents the natural purchasing power gain of a productive, non-debased economy
+- Synthetic benchmark. Not fetched from any API. Computed from M2 and GDP data.
 - Displayed as a **dashed lime-green line** on every chart
 - Everything above THM = gaining real purchasing power. Everything below = losing it.
-- Formula: `THM(t) = 100 × (1.02)^years_elapsed`
+- **Primary formula (dashboard):** `THM(t) = 100 × (M2_t / GDP_t) / (M2_start / GDP_start)`
+  - THM represents a fixed supply world — as Bitcoin's supply is fixed. M2/GDP is the empirically grounded approximation: it measures how much faster money grew than the economy required, and its inverse is what purchasing power would have been under that fixed supply. Not a guessed deflation rate — 111 years of actual data.
+  - Annual M2 and GDP data linearly interpolated to monthly chart points
+  - Implemented in `server/lib/thm-m2gdp.ts`
+- **Analytical fallback:** `THM(t) = 100 × (1.02)^years_elapsed` — used only if M2/GDP data unavailable
+  - Lives in `server/lib/thm.ts`; do not use as the primary definition
+- **Three-method comparison** (for `/lens/thm` research charts only, not dashboard):
+  - `thm_cpi = 100 × (CPI_t / CPI_1913)`
+  - `thm_m2gdp = 100 × (M2_t / GDP_t) / (M2_1913 / GDP_1913)` ← preferred
+  - `thm_m2raw = 100 × (M2_t / M2_1913)`
 
 ### USD Purchasing Power
-- Source: FRED CPIAUCSL
-- Formula: `100 × (CPI_start / CPI_t)` — inverted, so it slopes downward as CPI rises
-- This is the real purchasing power of holding dollars, not a forex rate
+- Deflator: M2/GDP ratio (FRED M2SL + GDPC1, annual, interpolated to monthly)
+- Formula: `100 × (M2GDP_start / M2GDP_t)` where `M2GDP_t = M2_t / GDP_t`
+- Same deflator as THM — ensures USD × THM = 100² (exact inverses) at every point
+- CPI (FRED CPIAUCNS) is still fetched but is no longer the asset deflator; retained for THM_CPI variant on /lens/thm only
 
 ### Other Currencies
-- Formula: exchange rate change vs USD × CPI adjustment
-- `100 × (FX_start / FX_t) × (CPI_start / CPI_t)`
+- Formula: `100 × (FX_start / FX_t) × (M2GDP_start / M2GDP_t)`
+- FX data from FRED (EUR, JPY, GBP, CNY). Uses US M2/GDP as common deflator — consistent with THM benchmark
 
 ### Equities & ETFs
-- Real return: nominal price change adjusted for CPI
-- `100 × (price_t / price_start) × (CPI_start / CPI_t)`
+- Real return: nominal price change adjusted by M2/GDP
+- Formula: `100 × (price_t / price_start) × (M2GDP_start / M2GDP_t)`
 
 ### BTC
-- Same formula as equities (USD price, CPI-adjusted)
-- No data before 2009-01-03 — handle gracefully in all chart logic
+- Same formula as equities (USD price, M2/GDP-adjusted)
+- Source: CryptoCompare (not CoinGecko). Data from 2010-07-17 — handle gracefully in all chart logic
 - **BTC classification**: user can toggle BTC between Currency panel and Risk-On panel
 - This toggle is a philosophical/educational feature — both classifications are defensible
 
@@ -143,9 +171,11 @@ Canonical schema is in `server/db/schema.sql`. It is the source of truth — nev
 
 - **Never re-fetch static historical data** — check DB first, only fetch what's missing
 - Log every fetch attempt to `fetch_log` table (success or failure)
-- Free API rate limits are real constraints — be conservative (1 req/sec Yahoo Finance)
-- CoinGecko full history: fetch once on setup, then daily deltas only
-- CPI history: fetch once back to 1913, then monthly updates
+- Free API rate limits are real constraints — be conservative (2s pause between Yahoo Finance tickers)
+- BTC history (CryptoCompare): full fetch once on setup, then daily 90-day overlapping incremental
+- CPI history (FRED CPIAUCNS): full fetch back to 1913 on setup, then 90-day overlapping incremental
+- M2/GDP history (FRED M2SL + GDPC1): full fetch from FRED start on setup; weekly refresh (Sunday 03:00 UTC)
+- M2/GDP pre-FRED data: seed once from `db/seeds/thm_historical_data.ts` (Friedman & Schwartz / BEA; never overwritten)
 - All jobs must be idempotent — safe to re-run without duplicating data
 
 ---
@@ -154,9 +184,9 @@ Canonical schema is in `server/db/schema.sql`. It is the source of truth — nev
 
 ```
 DATABASE_URL=postgresql://user:pass@localhost:5432/freemarketwatch
-FRED_API_KEY=          # free at fred.stlouisfed.org — get this first
-COINGECKO_API_KEY=     # optional, improves rate limits
-PORT=3001
+FRED_API_KEY=          # free at fred.stlouisfed.org — required for CPI, FX, M2, GDP
+COINGECKO_API_KEY=     # optional; BTC is currently fetched via CryptoCompare (no key needed)
+PORT=3333
 NODE_ENV=development
 ```
 
@@ -181,43 +211,42 @@ See `WEBDESIGN_SKILL.md` for the full design system. Summary:
 ## What Not To Do
 
 - Do not editorialize in UI copy — let the data speak
-- Do not build the education track yet — placeholder routes only
-- Do not build user auth yet — design schema to support it, don't implement it
+- Do not build user auth yet — schema supports it, implementation is deferred
 - Do not call APIs repeatedly for data already in the DB
 - Do not use `any` types in TypeScript
 - Do not make the BTC toggle subtle — it is a featured educational element
-- Do not skip the `fetch_log` — observability matters from day one
+- Do not skip the `fetch_log` — observability matters
 - Do not use flat table names without prefixes
+- Do not use the analytical 2% THM formula as the primary dashboard definition — use M2/GDP
 
 ---
 
-## Current Build Phase
+## Current State — June 2026
 
-**Phase 1 — Backend Foundation**
+The site is fully operational. All data pipelines are live. All Lens content is published.
 
-In order:
-1. Postgres schema (`server/db/schema.sql`)
-2. FRED CPI history fetch (back to 1913)
-3. FRED FX rates (EUR, JPY, GBP, CNY)
-4. CoinGecko BTC full history
-5. Yahoo Finance equities (AAPL, MSFT, GOOGL, AMZN, NVDA, META, TSLA, TLT, GLD, TIPS)
-6. THM calculation function
-7. Purchasing power calculation functions
-8. `pp_series` computation job
-9. Express API endpoints
+**What is complete:**
+- All backend data jobs (CPI, FX, BTC, equities, M2/GDP)
+- Dashboard with three panels, 1/5/10Y windows, BTC toggle
+- THM line on dashboard using M2/GDP basis
+- The Lens — all three components live at `/lens`, `/lens/fiat`, `/lens/thm`, `/lens/investing`
+- Six-act education series at `/lens/fiat/act/1` through `/lens/fiat/act/6`
+- Deployment to Railway + Cloudflare
 
-Do not move to Phase 2 (frontend integration) until all data is flowing and `pp_series` is populated with real numbers.
+**What is deferred (see FMW_Content.md for detail):**
+- Dashboard THM toggle (switch between CPI/M2GDP/M2RAW definitions)
+- MM/Cash instrument data
+- Component 3 investing dashboard tools
+- Additional instruments (more currencies, commodities)
+
+**Resolved design decisions:**
+- ORM: raw `pg` (no ORM)
+- THM formula: M2/GDP basis (not 2% analytical)
+- Deployment: Railway + Cloudflare
+- Purchasing power deflator: M2/GDP basis (not CPI) — consistent with THM benchmark
+- CPI (FRED CPIAUCNS): retained in DB and fetched, used only for THM_CPI variant on /lens/thm
 
 ---
 
-## Open Design Decisions (discuss with user before deciding)
-
-- ORM vs raw SQL (pgTyped, Drizzle, Prisma, or raw `pg`)
-- Hosting environment (local dev only for now, but design for eventual deployment)
-- Exact 2% THM figure — theoretically motivated but subject to revision
-- CPI as deflator — acknowledged as imperfect, may be supplemented later
-
----
-
-*Last updated: May 2026*
-*Companion files: FreeMarketWatch_CC_Spec.md, WEBDESIGN_SKILL.md*
+*Last updated: June 2026*
+*Companion files: WEBDESIGN_SKILL.md, docs/FMW_Vision.md, docs/FMW_Architecture.md, docs/FMW_Content.md*

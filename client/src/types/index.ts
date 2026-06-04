@@ -44,15 +44,15 @@ export const SERIES_COLORS: Record<string, string> = {
 export const PANEL_CONFIG: Record<PanelGroup, { title: string; subtitle: string }> = {
   currency: {
     title: 'World Currencies',
-    subtitle: 'USD · EUR · JPY · GBP · CNY vs Purchasing Power',
+    subtitle: 'Measured against THM — the fixed ruler. Which currencies preserved real value? Which only appeared to?',
   },
   riskoff: {
     title: 'Risk-Off Assets',
-    subtitle: 'Safe havens — do they actually preserve purchasing power?',
+    subtitle: 'Traditional "safe havens" — measured honestly. Does gold protect purchasing power against THM? Do bonds?',
   },
   riskon: {
     title: 'Risk-On Assets — Mag 7',
-    subtitle: 'Which equities outrun hard money?',
+    subtitle: 'The most productive public companies. Genuine value creation — or riding a fiat tailwind? THM separates the two.',
   },
 };
 

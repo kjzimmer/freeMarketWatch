@@ -69,10 +69,10 @@ function ChartTooltip({ active, payload, label }: TooltipProps) {
             </span>
             <span style={{
               fontSize: 11,
-              color: entry.value >= 0 ? 'var(--gain-green)' : 'var(--loss-red)',
+              color: entry.value >= 100 ? 'var(--gain-green)' : 'var(--loss-red)',
               fontWeight: 600,
             }}>
-              {entry.value >= 0 ? '+' : ''}{entry.value.toFixed(1)}%
+              {entry.value.toFixed(1)}
             </span>
           </div>
         );
@@ -109,7 +109,7 @@ function EndpointSummary({ chartData, tickers, hiddenSeries, onToggle }: Endpoin
       marginTop: 4,
     }}>
       {entries.map(({ ticker, value }) => {
-        const pct = value ?? 0;
+        const idx = value ?? 100;
         const isHidden = hiddenSeries.has(ticker);
         const isThm = ticker === 'THM';
         const color = SERIES_COLORS[ticker] ?? '#888';
@@ -140,10 +140,10 @@ function EndpointSummary({ chartData, tickers, hiddenSeries, onToggle }: Endpoin
             }} />
             <span style={{ color: 'var(--text-muted)' }}>{ticker}</span>
             <span style={{
-              color: pct >= 0 ? 'var(--gain-green)' : 'var(--loss-red)',
+              color: idx >= 100 ? 'var(--gain-green)' : 'var(--loss-red)',
               fontWeight: 600,
             }}>
-              {pct >= 0 ? '+' : ''}{pct.toFixed(1)}%
+              {idx.toFixed(1)}
             </span>
           </button>
         );
@@ -274,9 +274,9 @@ export default function ChartPanel({ group, window, btcAs }: ChartPanelProps) {
               axisLine={false}
               tickLine={false}
               tickFormatter={(v: number) => {
-                if (v === 0) return '0%';
-                if (Math.abs(v) >= 1000) return `${v > 0 ? '+' : ''}${(v / 1000).toFixed(1)}k%`;
-                return `${v > 0 ? '+' : ''}${Math.round(v)}%`;
+                if (v >= 10000) return `${(v / 1000).toFixed(0)}k`;
+                if (v >= 1000)  return `${(v / 1000).toFixed(1)}k`;
+                return String(Math.round(v));
               }}
             />
             <Tooltip
@@ -284,7 +284,7 @@ export default function ChartPanel({ group, window, btcAs }: ChartPanelProps) {
               cursor={{ stroke: 'rgba(255,255,255,0.08)', strokeWidth: 1 }}
             />
             <ReferenceLine
-              y={0}
+              y={100}
               stroke="rgba(255,255,255,0.12)"
               strokeDasharray="4 4"
             />
