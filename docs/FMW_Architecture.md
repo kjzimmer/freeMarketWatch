@@ -9,7 +9,7 @@
 |-------|-----------|---------|
 | Frontend framework | React + TypeScript | React 18, TS 5.7 |
 | Charting | Recharts | — |
-| Routing | React Router v6 | — |
+| Routing | React Router v7 | 7.15 |
 | Backend | Node.js + Express | Express 4.21 |
 | Database | PostgreSQL | — |
 | ORM/DB client | Raw `pg` (no ORM) | pg 8.13 |
@@ -82,9 +82,13 @@ freemarketwatch/
 │   │   ├── android-chrome-192x192.png
 │   │   ├── android-chrome-512x512.png
 │   │   ├── site.webmanifest
+│   │   ├── robots.txt         ← Allows all crawlers; points to sitemap
+│   │   ├── sitemap.xml        ← All 13 public routes (static + dynamic)
 │   │   └── downloads/         ← PDF/PPTX downloads (linked from /lens/fiat)
 │   └── src/
-│       ├── App.tsx            ← BrowserRouter, all routes
+│       ├── App.tsx            ← All routes (router-agnostic; BrowserRouter in main.tsx, StaticRouter in entry-server.tsx)
+│       ├── main.tsx           ← Client entry point; wraps App in BrowserRouter
+│       ├── entry-server.tsx   ← SSR entry point; wraps App in StaticRouter for prerendering
 │       ├── components/
 │       │   ├── NavBar.tsx     ← Fixed top nav; THE LENS dropdown with three sub-items
 │       │   ├── Footer.tsx     ← Footer links
@@ -113,7 +117,8 @@ freemarketwatch/
 │           └── index.ts           ← All shared types, SERIES_COLORS, PANEL_CONFIG
 │
 └── scripts/
-    └── generate-favicons.js   ← CJS script: generates PNG favicons from favicon.svg
+    ├── generate-favicons.js   ← CJS script: generates PNG favicons from favicon.svg
+    └── prerender.js           ← CJS script: renders static routes to dist/[route]/index.html at build time
 ```
 
 ---
@@ -516,11 +521,13 @@ The codebase is configured for Railway deployment with Cloudflare in front.
 ### Production environment
 
 - **Host:** Railway
-- **Build command (root):** `npm run build` (builds server TypeScript + client Vite bundle)
+- **Build command (root):** `npm run build`
+  - Server: `tsc` compiles TypeScript; post-step copies `db/migrations/*.sql` into `dist/db/migrations/` (tsc only outputs `.js`, not `.sql`)
+  - Client: `tsc` type-check → `vite build` (SPA bundle) → `vite build --ssr` (SSR bundle to `dist-ssr/`) → `node scripts/prerender.js` (writes prerendered HTML, deletes `dist-ssr/`)
 - **Start command:** `node server/dist/db/migrate.js && node server/dist/index.js`
-  - Migrations run automatically at every startup (idempotent)
+  - Migrations run automatically at every startup (idempotent; SQL files are in `dist/db/migrations/` after build)
   - Server then starts on PORT (Railway injects)
-- **Static files:** Express serves `client/dist` in production (`NODE_ENV=production`)
+- **Static files:** Express serves `client/dist` in production (`NODE_ENV=production`). The catch-all checks for `dist/[req.path]/index.html` before falling back to `dist/index.html` — prerendered pages are served directly without a redirect.
 - **DNS/CDN:** Cloudflare in front of Railway
 
 ### Environments

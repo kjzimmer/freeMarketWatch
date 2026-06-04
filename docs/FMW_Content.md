@@ -88,8 +88,27 @@ The schema and fetch infrastructure support adding more currencies, commodities,
 **Download files**
 The `/lens/fiat` page links to downloadable files (one PDF, seven PPTX) at `/downloads/FreeMarketWatch_Education_SixActs_v1.2.pdf` and similar paths. These files are not confirmed to exist in `client/public/downloads/`. If they do not exist, the download links are broken.
 
-**Bitcoin-as-mature-monetary-standard framing**
-The owner's stated vision includes the view that THM represents what Bitcoin looks like as a mature monetary standard with adoption volatility factored out. This framing is not yet in any site copy — it is implicit in structure (Bitcoin frequently leads against THM in long windows) but not stated.
+**Bitcoin-as-mature-monetary-standard framing — IMPLEMENTED**
+The framing that THM represents what Bitcoin looks like as a mature monetary standard (adoption phase factored out) is now live in three places: THMExplainer on the dashboard (fixed supply → natural deflation → M2/GDP approximation), About page (two-point founding premise, second point explicitly states this), and LensTHM ("Why THM and Bitcoin are the same question" section with six paragraphs). This item is complete.
+
+---
+
+## SEO / Prerendering
+
+Static content pages are prerendered at build time. The dashboard (`/`) is excluded — live charts require client-side data fetching.
+
+| Route | Prerendered | Per-page title + description |
+|-------|-------------|------------------------------|
+| `/` | No (SPA, live data) | Generic (from `index.html`) |
+| `/about` | Yes | "About \| Free Market Watch" |
+| `/contact` | Yes | "Contact \| Free Market Watch" |
+| `/lens` | Yes | "The Lens \| Free Market Watch" |
+| `/lens/fiat` | Yes | "Why the Fiat Lens Distorts \| Free Market Watch" |
+| `/lens/fiat/act/1` – `/act/6` | Yes | "Act N: [Title] \| Free Market Watch" |
+| `/lens/thm` | Yes | "The THM Lens \| Free Market Watch" |
+| `/lens/investing` | Yes | "Investing Through the THM Lens \| Free Market Watch" |
+
+`robots.txt` and `sitemap.xml` are in `client/public/`. Sitemap lists all 13 routes including `/`. Crawlers on prerendered routes receive fully populated HTML; crawlers on `/` receive the SPA shell (React renders client-side after JS loads).
 
 ---
 

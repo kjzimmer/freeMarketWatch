@@ -81,7 +81,9 @@ freemarketwatch/
 │
 ├── client/
 │   ├── src/
-│   │   ├── App.tsx
+│   │   ├── App.tsx            ← Routes only — no Router (router-agnostic for SSR)
+│   │   ├── main.tsx           ← Client entry: wraps App in BrowserRouter
+│   │   ├── entry-server.tsx   ← SSR entry: wraps App in StaticRouter for prerendering
 │   │   ├── components/
 │   │   │   ├── NavBar.tsx     ← THE LENS dropdown
 │   │   │   ├── Footer.tsx
@@ -98,10 +100,11 @@ freemarketwatch/
 │   │   │   └── acts.ts        ← Six-act educational series
 │   │   └── types/
 │   │       └── index.ts
-│   └── public/                ← favicons, site.webmanifest, downloads/
+│   └── public/                ← favicons, site.webmanifest, robots.txt, sitemap.xml, downloads/
 │
 └── scripts/
-    └── generate-favicons.js
+    ├── generate-favicons.js
+    └── prerender.js           ← Renders 12 static routes to dist/[route]/index.html
 ```
 
 ---
@@ -231,6 +234,8 @@ The site is fully operational. All data pipelines are live. All Lens content is 
 - THM line on dashboard using M2/GDP basis
 - The Lens — all three components live at `/lens`, `/lens/fiat`, `/lens/thm`, `/lens/investing`
 - Six-act education series at `/lens/fiat/act/1` through `/lens/fiat/act/6`
+- Bitcoin/THM framing live: THMExplainer, About, and LensTHM all state the fixed-supply connection explicitly
+- SEO prerendering: 12 static routes prerendered at build time; robots.txt + sitemap.xml
 - Deployment to Railway + Cloudflare
 
 **What is deferred (see FMW_Content.md for detail):**
