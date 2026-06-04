@@ -1,4 +1,5 @@
 import './lib/env';
+import fs from 'fs';
 import path from 'path';
 import express from 'express';
 import cors from 'cors';
@@ -31,8 +32,13 @@ app.use('/api/learn', learnRouter);
 if (isProd) {
   const clientDist = path.join(__dirname, '../../client/dist');
   app.use(express.static(clientDist));
-  app.get('*', (_req, res) => {
-    res.sendFile(path.join(clientDist, 'index.html'));
+  app.get('*', (req, res) => {
+    const prerendered = path.join(clientDist, req.path, 'index.html');
+    if (fs.existsSync(prerendered)) {
+      res.sendFile(prerendered);
+    } else {
+      res.sendFile(path.join(clientDist, 'index.html'));
+    }
   });
 }
 

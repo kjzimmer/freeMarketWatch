@@ -5,6 +5,7 @@ const STORAGE_KEY = 'fmw_explainer_collapsed';
 
 export default function THMExplainer() {
   const [collapsed, setCollapsed] = useState(() => {
+    if (typeof window === 'undefined') return false;
     return localStorage.getItem(STORAGE_KEY) === 'true';
   });
 

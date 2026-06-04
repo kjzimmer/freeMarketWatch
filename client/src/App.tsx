@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom';
+import { Routes, Route, Navigate, useParams } from 'react-router-dom';
 import NavBar from './components/NavBar';
 import Footer from './components/Footer';
 import Dashboard from './pages/Dashboard';
@@ -17,7 +17,7 @@ function RedirectLegacyAct() {
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <>
       <NavBar />
       <Routes>
         <Route path="/"                              element={<Dashboard />} />
@@ -39,6 +39,6 @@ export default function App() {
         <Route path="/learn/act/:n"                  element={<RedirectLegacyAct />} />
       </Routes>
       <Footer />
-    </BrowserRouter>
+    </>
   );
 }
