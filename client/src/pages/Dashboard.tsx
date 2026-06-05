@@ -7,7 +7,6 @@ import ChartPanel from '../components/ChartPanel';
 
 const STORAGE_KEY_BTC = 'fmw_btcAs';
 const STORAGE_KEY_WINDOW = 'fmw_window';
-const STORAGE_KEY_CHANGE_NOTE = 'fmw_thm_change_note_dismissed';
 
 function loadBTCAs(): BTCClassification {
   const stored = localStorage.getItem(STORAGE_KEY_BTC);
@@ -18,59 +17,6 @@ function loadWindow(): WindowYears {
   const stored = localStorage.getItem(STORAGE_KEY_WINDOW);
   if (stored === '1' || stored === '5' || stored === '10') return parseInt(stored, 10) as WindowYears;
   return 10;
-}
-
-function THMChangeNote({ onDismiss }: { onDismiss: () => void }) {
-  return (
-    <div style={{
-      maxWidth: 1600,
-      margin: '12px auto 0',
-      padding: '0 40px',
-    }}>
-      <div style={{
-        background: 'rgba(96,165,250,0.04)',
-        border: '1px solid rgba(96,165,250,0.25)',
-        borderRadius: 8,
-        padding: '12px 16px',
-        display: 'flex',
-        alignItems: 'flex-start',
-        justifyContent: 'space-between',
-        gap: 16,
-      }}>
-        <div style={{
-          fontFamily: 'var(--font-display)',
-          fontSize: 13,
-          color: 'var(--text-secondary)',
-          lineHeight: 1.6,
-        }}>
-          <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Note on the THM benchmark: </span>
-          We have updated how we calculate THM. The benchmark now uses M2 adjusted for real economic
-          output — a more theoretically grounded measure of monetary debasement than CPI.
-          The chart lines have shifted slightly. The story they tell has not.{' '}
-          <Link to="/lens/thm" style={{ color: '#60a5fa', textDecoration: 'none', fontFamily: 'var(--font-data)', fontSize: 12 }}>
-            What changed and why →
-          </Link>
-        </div>
-        <button
-          onClick={onDismiss}
-          style={{
-            fontFamily: 'var(--font-data)',
-            fontSize: 10,
-            color: 'var(--text-faint)',
-            letterSpacing: '0.06em',
-            flexShrink: 0,
-            padding: '2px 6px',
-            background: 'transparent',
-            border: '1px solid var(--border-subtle)',
-            borderRadius: 4,
-            cursor: 'pointer',
-          }}
-        >
-          dismiss
-        </button>
-      </div>
-    </div>
-  );
 }
 
 function LensCalloutCard() {
@@ -143,9 +89,6 @@ function LensCalloutCard() {
 export default function Dashboard() {
   const [window, setWindowYears] = useState<WindowYears>(loadWindow);
   const [btcAs, setBtcAs] = useState<BTCClassification>(loadBTCAs);
-  const [changeNoteDismissed, setChangeNoteDismissed] = useState(
-    () => localStorage.getItem(STORAGE_KEY_CHANGE_NOTE) === 'true'
-  );
 
   function handleWindowChange(w: WindowYears) {
     setWindowYears(w);
@@ -157,11 +100,6 @@ export default function Dashboard() {
     localStorage.setItem(STORAGE_KEY_BTC, classification);
   }
 
-  function handleDismissChangeNote() {
-    setChangeNoteDismissed(true);
-    localStorage.setItem(STORAGE_KEY_CHANGE_NOTE, 'true');
-  }
-
   return (
     <div style={{ minHeight: '100vh', paddingTop: 56 }}>
       <Header
@@ -170,8 +108,6 @@ export default function Dashboard() {
         onWindowChange={handleWindowChange}
         onBTCChange={handleBTCChange}
       />
-
-      {!changeNoteDismissed && <THMChangeNote onDismiss={handleDismissChangeNote} />}
 
       <THMExplainer />
 

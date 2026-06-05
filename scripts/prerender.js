@@ -35,6 +35,11 @@ const SSR_DIR     = path.join(CLIENT_DIR, 'dist-ssr');
 
 const ROUTES = [
   {
+    path: '/',
+    title: 'Free Market Watch',
+    desc: 'The monetary system redirects wealth quietly, automatically, every year. The tools to replace it exist. What\'s missing is broad understanding.',
+  },
+  {
     path: '/about',
     title: 'About',
     desc: 'What Free Market Watch is and why purchasing power is the only honest benchmark for measuring any asset or currency.',
@@ -93,6 +98,11 @@ const ROUTES = [
     path: '/lens/investing',
     title: 'Investing Through the THM Lens',
     desc: 'How investment analysis changes when hard money is the base position, not a forced choice.',
+  },
+  {
+    path: '/lens/adoption',
+    title: 'Bitcoin Adoption Index',
+    desc: 'Tracking Bitcoin\'s adoption as a medium of exchange — Lightning Network volume, merchant acceptance, and payment flows normalized against global benchmarks.',
   },
 ];
 

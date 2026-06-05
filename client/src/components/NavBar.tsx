@@ -2,9 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 
 const LENS_SUBNAV = [
-  { to: '/lens/fiat',       label: 'Why the Fiat Lens Distorts',    badge: '1' },
-  { to: '/lens/thm',        label: 'The THM Lens',                  badge: '2' },
-  { to: '/lens/investing',  label: 'Investing Through the THM Lens', badge: '3' },
+  { to: '/lens/fiat',       label: 'Why the Fiat Lens Distorts',    badge: '1', dev: false },
+  { to: '/lens/thm',        label: 'The THM Lens',                  badge: '2', dev: false },
+  { to: '/lens/investing',  label: 'Investing Through the THM Lens', badge: '3', dev: false },
+  { to: '/lens/adoption',   label: 'Bitcoin Adoption Index',        badge: '4', dev: true  },
 ];
 
 function useIsMobile(breakpoint = 768): boolean {
@@ -97,7 +98,7 @@ export default function NavBar() {
         {/* Desktop nav */}
         {!isMobile && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
-            <NavLink to="/" end style={({ isActive }) => linkStyle(isActive)}>
+            <NavLink to="/dashboard" style={({ isActive }) => linkStyle(isActive)}>
               DASHBOARD
             </NavLink>
 
@@ -156,7 +157,7 @@ export default function NavBar() {
                   }}>
                     Components
                   </div>
-                  {LENS_SUBNAV.map(({ to, label, badge }) => {
+                  {LENS_SUBNAV.map(({ to, label, badge, dev }) => {
                     const isActive = location.pathname === to || location.pathname.startsWith(to + '/');
                     return (
                       <NavLink
@@ -188,11 +189,27 @@ export default function NavBar() {
                         <div style={{
                           fontFamily: 'var(--font-display)',
                           fontSize: 13,
-                          color: isActive ? 'var(--thm-green)' : 'var(--text-secondary)',
+                          color: isActive ? 'var(--thm-green)' : dev ? 'var(--text-muted)' : 'var(--text-secondary)',
                           lineHeight: 1.4,
                         }}>
                           {label}
                         </div>
+                        {dev && (
+                          <div style={{
+                            fontFamily: 'var(--font-data)',
+                            fontSize: 8,
+                            letterSpacing: '0.08em',
+                            color: '#94a3b8',
+                            border: '1px solid #94a3b840',
+                            borderRadius: 3,
+                            padding: '1px 5px',
+                            marginLeft: 'auto',
+                            flexShrink: 0,
+                            textTransform: 'uppercase',
+                          }}>
+                            dev
+                          </div>
+                        )}
                       </NavLink>
                     );
                   })}
@@ -269,8 +286,7 @@ export default function NavBar() {
           padding: '8px 0 16px',
         }}>
           <NavLink
-            to="/"
-            end
+            to="/dashboard"
             onClick={() => setMenuOpen(false)}
             style={({ isActive }) => ({
               display: 'block',

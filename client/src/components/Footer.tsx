@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 
 const FOOTER_LINKS = [
-  { to: '/', label: 'Dashboard' },
+  { to: '/dashboard', label: 'Dashboard' },
   { to: '/lens', label: 'The Lens' },
   { to: '/about', label: 'About' },
   { to: '/contact', label: 'Contact' },
@@ -47,7 +47,27 @@ export default function Footer() {
             ))}
           </div>
         </div>
-        <span>Data updated daily</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+          <button
+            onClick={() => {
+              if (typeof window !== 'undefined') localStorage.removeItem('fmw_visited');
+              window.location.href = '/';
+            }}
+            style={{
+              fontFamily: 'var(--font-data)',
+              fontSize: 11,
+              color: 'var(--text-faint)',
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              cursor: 'pointer',
+              letterSpacing: '0.05em',
+            }}
+          >
+            Start over
+          </button>
+          <span>Data updated daily</span>
+        </div>
       </div>
     </footer>
   );

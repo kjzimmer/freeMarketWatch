@@ -189,6 +189,16 @@ export default function LensHub() {
             cta="Read the framework"
             to="/lens/investing"
           />
+          <ComponentCard
+            number={4}
+            badge="In development"
+            badgeColor="#94a3b8"
+            title="Bitcoin Adoption Index"
+            body="Tracking Bitcoin's transition from asset to monetary standard — measuring actual use as a medium of exchange against global payment benchmarks. Not price, not sentiment. The function that distinguishes money from a store of value: does anyone actually spend it?"
+            meta="Lightning Network volume · merchant acceptance · payment flows"
+            cta="Learn more"
+            to="/lens/adoption"
+          />
         </div>
 
         <hr style={{ border: 'none', borderTop: '1px solid var(--border-subtle)', marginBottom: 40 }} />
