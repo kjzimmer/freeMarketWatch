@@ -94,8 +94,8 @@ freemarketwatch/
 │   │   ├── hooks/
 │   │   │   ├── useSeriesData.ts
 │   │   │   └── useTHMChartData.ts
-│   │   ├── pages/             ← Dashboard, About, Contact, LensHub, LensFiat,
-│   │   │                         LensTHM, LensInvesting, LearnAct
+│   │   ├── pages/             ← HookPage, Dashboard, About, Contact, LensHub,
+│   │   │                         LensFiat, LensTHM, LensInvesting, LensAdoption, LearnAct
 │   │   ├── content/
 │   │   │   └── acts.ts        ← Six-act educational series
 │   │   └── types/
@@ -104,7 +104,7 @@ freemarketwatch/
 │
 └── scripts/
     ├── generate-favicons.js
-    └── prerender.js           ← Renders 12 static routes to dist/[route]/index.html
+    └── prerender.js           ← Renders 14 static routes to dist/[route]/index.html
 ```
 
 ---
@@ -232,10 +232,12 @@ The site is fully operational. All data pipelines are live. All Lens content is 
 - All backend data jobs (CPI, FX, BTC, equities, M2/GDP)
 - Dashboard with three panels, 1/5/10Y windows, BTC toggle
 - THM line on dashboard using M2/GDP basis
-- The Lens — all three components live at `/lens`, `/lens/fiat`, `/lens/thm`, `/lens/investing`
+- Hook page at `/` — Version A copy, smart routing via `fmw_visited` localStorage flag, returns returning visitors to `/dashboard`
+- Dashboard moved to `/dashboard` (was `/`)
+- The Lens — all four components live: `/lens/fiat`, `/lens/thm`, `/lens/investing`, `/lens/adoption` (adoption is a placeholder)
 - Six-act education series at `/lens/fiat/act/1` through `/lens/fiat/act/6`
 - Bitcoin/THM framing live: THMExplainer, About, and LensTHM all state the fixed-supply connection explicitly
-- SEO prerendering: 12 static routes prerendered at build time; robots.txt + sitemap.xml
+- SEO prerendering: 14 static routes prerendered at build time; robots.txt + sitemap.xml
 - Deployment to Railway + Cloudflare
 
 **What is deferred (see FMW_Content.md for detail):**

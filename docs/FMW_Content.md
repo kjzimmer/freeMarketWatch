@@ -7,10 +7,11 @@
 
 | Route | Page / Component | Status | Content type | Notes |
 |-------|-----------------|--------|--------------|-------|
-| `/` | Dashboard | **Live** | Live data + static copy | Three chart panels (currency, riskoff, riskon); 1/5/10Y window selector; BTC toggle; THM change notice (dismissable); collapsible THM explainer; Lens callout card |
+| `/` | HookPage | **Live** | Static | Hook copy (Version A); smart routing — `fmw_visited` flag in localStorage redirects returning visitors to `/dashboard`; deep links bypass; two CTAs: "The Lens →" (primary, green) and "The Dashboard →" (secondary, outlined) |
+| `/dashboard` | Dashboard | **Live** | Live data + static copy | Three chart panels (currency, riskoff, riskon); 1/5/10Y window selector; BTC toggle; collapsible THM explainer; Lens callout card |
 | `/about` | About | **Live** | Static | Site mission, how to read the charts, methodology note, data sources, what's next; links to `/lens` and `/lens/thm` |
 | `/contact` | Contact | **Live** | Static + form | Contact form; links to education series |
-| `/lens` | The Lens Hub | **Live** | Static | Three-column layout; cards for each Lens component with status badges (Established / Open questions / In development) |
+| `/lens` | The Lens Hub | **Live** | Static | Four-column layout; cards for each Lens component with status badges (Established / Open questions / In development); Component 4 = Bitcoin Adoption Index |
 | `/lens/fiat` | Why the Fiat Lens Distorts | **Live** | Static | Intro text; six act-summary cards; closing transition to `/lens/thm`; downloads section |
 | `/lens/fiat/act/1` | Act 1: Why Money Exists | **Live** | Static | Paragraph, stat-cards, pullquote, coming-next blocks |
 | `/lens/fiat/act/2` | Act 2: What Makes Good Money | **Live** | Static | Paragraph, property-grid, comparison-table blocks |
@@ -20,6 +21,7 @@
 | `/lens/fiat/act/6` | Act 6: What Comes Next | **Live** | Static | Paragraph, cta-panels blocks |
 | `/lens/thm` | The THM Lens | **Live** | Static + live charts | Full v3 methodology text; four Recharts research charts (three THM variant lines, purchasing power of dollar, output deflation gap, stolen deflation); links to `/lens/investing` |
 | `/lens/investing` | Investing Through the THM Lens | **Live** | Static | Six sections of investing framework theory; five investment criteria cards; dashboard implications section (explicitly marked work in progress) |
+| `/lens/adoption` | Bitcoin Adoption Index | **In development** | Static (placeholder) | "In Development" badge; three sections: what this measures, why it matters, notify-me form; form uses `VITE_FORMSPREE_ENDPOINT` env var |
 
 ### Legacy redirects (no page rendered)
 
@@ -48,7 +50,8 @@
 
 | Route | Source |
 |-------|--------|
-| Dashboard | Live data (purchasing power series from DB); static copy CC-authored (v3 briefing) |
+| `/` HookPage | CC-authored (Phase 2 briefing, Version A hook copy) |
+| `/dashboard` Dashboard | Live data (purchasing power series from DB); static copy CC-authored (v3 briefing) |
 | About | CC-authored (v3) |
 | Contact | CC-authored |
 | `/lens` hub | CC-authored (v3) |
@@ -56,6 +59,7 @@
 | Acts 1–6 | Owner content (in `client/src/content/acts.ts`) |
 | `/lens/thm` | CC-authored from owner methodology; live charts from `/api/learn/thm-charts` |
 | `/lens/investing` | CC-authored (v3) |
+| `/lens/adoption` | CC-authored (Phase 2 briefing placeholder) |
 
 ---
 
@@ -95,11 +99,12 @@ The framing that THM represents what Bitcoin looks like as a mature monetary sta
 
 ## SEO / Prerendering
 
-Static content pages are prerendered at build time. The dashboard (`/`) is excluded — live charts require client-side data fetching.
+Static content pages are prerendered at build time. The dashboard (`/dashboard`) is excluded — live charts require client-side data fetching.
 
 | Route | Prerendered | Per-page title + description |
 |-------|-------------|------------------------------|
-| `/` | No (SPA, live data) | Generic (from `index.html`) |
+| `/` | Yes | "Free Market Watch" (hook page — static copy) |
+| `/dashboard` | No (SPA, live data) | Generic (from `index.html`) |
 | `/about` | Yes | "About \| Free Market Watch" |
 | `/contact` | Yes | "Contact \| Free Market Watch" |
 | `/lens` | Yes | "The Lens \| Free Market Watch" |
@@ -107,8 +112,9 @@ Static content pages are prerendered at build time. The dashboard (`/`) is exclu
 | `/lens/fiat/act/1` – `/act/6` | Yes | "Act N: [Title] \| Free Market Watch" |
 | `/lens/thm` | Yes | "The THM Lens \| Free Market Watch" |
 | `/lens/investing` | Yes | "Investing Through the THM Lens \| Free Market Watch" |
+| `/lens/adoption` | Yes | "Bitcoin Adoption Index \| Free Market Watch" |
 
-`robots.txt` and `sitemap.xml` are in `client/public/`. Sitemap lists all 13 routes including `/`. Crawlers on prerendered routes receive fully populated HTML; crawlers on `/` receive the SPA shell (React renders client-side after JS loads).
+`robots.txt` and `sitemap.xml` are in `client/public/`. Sitemap lists 14 routes. Crawlers on prerendered routes receive fully populated HTML; crawlers on `/dashboard` receive the SPA shell (React renders client-side after JS loads). The `fmw_visited` smart-redirect on `/` runs client-side after hydration — search engines see the hook copy.
 
 ---
 
