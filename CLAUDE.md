@@ -211,6 +211,18 @@ See `WEBDESIGN_SKILL.md` for the full design system. Summary:
 
 ---
 
+## Keeping llms.txt Current
+
+`client/public/llms.txt` is served at `https://freemarketwatch.world/llms.txt`. It allows AI systems to understand the site without browsing. **Update it whenever:**
+- A new page or route is added
+- A page's status changes (e.g., "In development" → live)
+- The THM methodology or data sources change
+- Major copy changes on About, the Lens hub, or the Dashboard
+
+The file follows the [llms.txt standard](https://llmstxt.org): plain markdown, one `# Title`, a blockquote summary, description paragraphs, then `## Sections` with links. Keep descriptions accurate and concise — this is what another AI reads to understand the site.
+
+---
+
 ## What Not To Do
 
 - Do not editorialize in UI copy — let the data speak

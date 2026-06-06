@@ -1,0 +1,57 @@
+# FreeMarketWatch
+
+> Purchasing power is the only honest benchmark. Not the dollar, not Bitcoin, not gold. The question for any asset, currency, or good is: does it maintain, gain, or lose purchasing power over time?
+
+FreeMarketWatch is an economics education and data dashboard that measures financial assets against THM — Theoretical Hard Money — instead of the US dollar. Every chart on the site shows the same markets, the same prices, the same assets you see elsewhere. The lens is different.
+
+The site has two audiences: people who understand markets and want to see reality unfiltered by fiat framing, and people who are learning what money is and why debasement matters.
+
+## What is THM?
+
+THM (Theoretical Hard Money) is a synthetic benchmark computed from 111 years of US M2 money supply and GDP data. It represents what purchasing power would look like under a fixed-supply monetary standard — the end state of Bitcoin as a mature monetary standard, with the adoption-phase speculation factored out.
+
+Formula: `THM(t) = 100 × (M2_t / GDP_t) / (M2_start / GDP_start)`
+
+Everything above THM on a chart is gaining real purchasing power. Everything below THM is losing it. The dashed green line on every chart is THM.
+
+This is not a Bitcoin price site. Bitcoin appears as a data series and as the strongest historical example of hard money properties. The hero of the site is honest purchasing power measurement.
+
+## Pages
+
+- [Home](https://freemarketwatch.world/): Hook page — the site's opening argument for why the monetary lens matters
+- [Dashboard](https://freemarketwatch.world/dashboard): Live purchasing-power charts for currencies, risk-off assets, and risk-on assets measured against THM. Three panels (Currency, Risk-Off, Risk-On), 1/5/10-year windows, BTC classification toggle. Data updated daily.
+- [About](https://freemarketwatch.world/about): Site premise, the two founding assumptions (purchasing power as the only honest benchmark; THM as Bitcoin's mature end state), how to read the charts, data sources
+- [The Lens](https://freemarketwatch.world/lens): Hub for the intellectual framework behind the site — four components
+
+## The Lens
+
+The Lens is the intellectual foundation of the site. Four components:
+
+- [Why the Fiat Lens Distorts](https://freemarketwatch.world/lens/fiat): Six-act series on money, debasement, and the hard money alternative. Builds from first principles to Bitcoin. ~30 minutes total.
+  - [Act 1: Why Money Exists](https://freemarketwatch.world/lens/fiat/act/1): From barter to Bitcoin — the origin story of money
+  - [Act 2: What Makes Good Money](https://freemarketwatch.world/lens/fiat/act/2): Properties that separate honest money from instruments that fail at their job
+  - [Act 3: The Blast Radius](https://freemarketwatch.world/lens/fiat/act/3): How fiat debasement works in practice
+  - [Act 4: Hard Money Changes Everything](https://freemarketwatch.world/lens/fiat/act/4): How bad money distorts investment, destroys savings, warps economic decision-making
+  - [Act 5: Bitcoin](https://freemarketwatch.world/lens/fiat/act/5): Bitcoin as sound money — fixed supply, no authority
+  - [Act 6: What Comes Next](https://freemarketwatch.world/lens/fiat/act/6): The path forward under hard money assumptions
+- [The THM Lens](https://freemarketwatch.world/lens/thm): Full methodology — what THM is, how it is computed, three measurement approaches (CPI-based, M2/GDP-based, M2-raw), why M2/GDP is preferred, honest acknowledgment of open questions. Includes four research charts comparing methods over 111 years.
+- [Investing Through the THM Lens](https://freemarketwatch.world/lens/investing): How investment analysis changes when hard money is the base position. First-principles framework; dashboard tools in development.
+- [Bitcoin Adoption Index](https://freemarketwatch.world/lens/adoption): In development. Will track Bitcoin's transition from asset to monetary standard via Lightning Network volume, merchant acceptance, and payment flows.
+
+## Data Sources and Methodology
+
+- **Purchasing power deflator**: US M2/GDP ratio (FRED M2SL + GDPC1), annual data linearly interpolated to monthly
+- **USD series**: `100 × (M2GDP_start / M2GDP_t)` — exact inverse of THM
+- **Other currencies** (EUR, JPY, GBP, CNY): `100 × (FX_start / FX_t) × (M2GDP_start / M2GDP_t)` using FRED FX data
+- **Equities and ETFs**: `100 × (price_t / price_start) × (M2GDP_start / M2GDP_t)` — nominal price change adjusted by M2/GDP
+- **Bitcoin**: Same formula as equities; source CryptoCompare; data from 2010-07-17
+- **THM**: M2/GDP-based primary formula; CPI-based and M2-raw variants available on /lens/thm for comparison only
+- Pre-FRED historical data (1913–1959) from Friedman & Schwartz / BEA
+
+## Contact
+
+- [Contact](https://freemarketwatch.world/contact): Get in touch — corrections, extensions, disagreements with the argument are welcome
+
+---
+
+*Not financial advice. Data updated daily. FreeMarketWatch · 2026*
