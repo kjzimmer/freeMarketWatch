@@ -24,3 +24,9 @@ npm-debug.log*
 # OS
 .DS_Store
 Thumbs.db
+
+# Local scripts with hardcoded credentials — never commit
+server/db/verify.js
+
+# Repository / working files not for version control
+server/repository/
