@@ -51,7 +51,9 @@ router.get('/', async (_req: Request, res: Response) => {
   const neverRun = statuses.every((s) => s.lastFetch === null);
   const status = anyStale ? 'degraded' : neverRun ? 'initializing' : 'healthy';
 
-  return res.status(anyStale ? 503 : 200).json({
+  // Always 200 — Railway requires HTTP 200 to pass the deployment healthcheck.
+  // Staleness is reported in the response body, not the status code.
+  return res.status(200).json({
     success: !anyStale,
     data: { status, sources: statuses },
   });
