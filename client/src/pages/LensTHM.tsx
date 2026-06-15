@@ -433,7 +433,7 @@ export default function LensTHM() {
           fontFamily: 'var(--font-data)', fontSize: 11, color: 'var(--thm-green)',
           letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 12,
         }}>
-          The Lens · Component 2 of 3
+          The Lens · Component 2 of 4
         </div>
         <h1 style={{
           fontFamily: 'var(--font-display)', fontSize: 36, fontWeight: 800,
@@ -525,65 +525,213 @@ export default function LensTHM() {
         {/* Unified theory section */}
         <h2 style={h2}>The underlying framework</h2>
         <p style={prose}>
-          Before examining three ways to calculate THM, it helps to understand the single framework
-          they are all variations of.
+          Before examining three ways to calculate THM, it helps to understand what the
+          calculation is actually isolating — and what it is not.
+        </p>
+
+        <h3 style={h3}>Two observable forces</h3>
+        <p style={prose}>
+          Every period, two things happen simultaneously in the economy:
         </p>
         <p style={prose}>
-          Purchasing power of any currency is determined by two forces working in opposite directions:
+          <strong style={{ color: 'var(--text-primary)' }}>Monetary Expansion:</strong>{' '}
+          The money supply (M2) grows. More monetary claims are issued. Each existing dollar
+          represents a smaller share of total output. This is the Monetary Expansion Factor —
+          M2_t / M2_(t−1).
         </p>
         <p style={prose}>
-          <strong style={{ color: 'var(--text-primary)' }}>M2 growth pulls purchasing power down.</strong>{' '}
-          When more dollars are created, each existing dollar represents a smaller fraction of the
-          total. This is debasement — pure dilution of the monetary unit.
+          <strong style={{ color: 'var(--text-primary)' }}>Output Growth:</strong>{' '}
+          The real economy expands or contracts. GDP rises with more workers, more capital, more
+          productive activity. This is the Output Growth Factor — GDP_t / GDP_(t−1).
         </p>
         <p style={prose}>
-          <strong style={{ color: 'var(--text-primary)' }}>GDP growth pushes purchasing power up.</strong>{' '}
-          When the economy produces more goods and services per dollar, each dollar buys more.
-          This is the natural deflation of a productive economy — abundance increasing faster than money.
+          These two forces are observable and separable. One clarification on the labels: the
+          Output Growth Factor is simply GDP growth. It does not isolate productivity or
+          efficiency — it includes population growth, capital accumulation, government spending,
+          and genuine productivity gains alike. We label it Output Growth because that is what the
+          math measures, nothing more.
         </p>
-        <p style={prose}>The net effect is the ratio:</p>
         <pre style={{
           background: 'var(--bg-surface)', border: '1px solid var(--border-default)',
           borderRadius: 8, padding: '14px 18px', marginBottom: 20,
           fontFamily: 'var(--font-data)', fontSize: 13, color: 'var(--thm-green)',
           lineHeight: 1.7, overflowX: 'auto',
         }}>
-          {`Purchasing power ∝ GDP / M2`}
+          {`Monetary Expansion Factor(t) = M2_t / M2_(t−1)\nOutput Growth Factor(t)      = GDP_t / GDP_(t−1)\n\nMonetary Intensity:\nMI_t = M2_t / GDP_t\n(monetary claims per unit of real output)\n\nMI rises when money supply grows faster than output.\nMI falls when output grows faster than money supply.`}
         </pre>
-        <p style={prose}>In log space, these two forces add and subtract cleanly:</p>
+        <p style={prose}>
+          A note on existing economic concepts: economists familiar with the quantity theory of
+          money will recognize that GDP/M2 is broad money velocity. THM is related to velocity
+          but the interpretation differs. Velocity is typically framed as money turnover. We frame
+          M2/GDP as monetary claims per unit of output — a different lens on the same ratio. We
+          flag this because a careful economist will raise it.
+        </p>
+
+        <h3 style={h3}>What THM measures</h3>
+        <p style={prose}>
+          THM is a monetary intensity benchmark. It measures how much monetary claims have grown
+          relative to real output — the accumulated excess of Monetary Expansion over Output
+          Growth, compounded from 1913.
+        </p>
         <pre style={{
           background: 'var(--bg-surface)', border: '1px solid var(--border-default)',
           borderRadius: 8, padding: '14px 18px', marginBottom: 20,
           fontFamily: 'var(--font-data)', fontSize: 13, color: 'var(--thm-green)',
           lineHeight: 1.7, overflowX: 'auto',
         }}>
-          {`log(PP) = log(GDP growth) − log(M2 growth)`}
+          {`THM_(t) = THM_(t−1) × (Monetary Expansion Factor / Output Growth Factor)\n\nCompounded from 1913:\nTHM(t) = 100 × (M2_t / GDP_t) / (M2_1913 / GDP_1913)`}
         </pre>
         <p style={prose}>
-          <strong style={{ color: 'var(--text-primary)' }}>For THM:</strong> the money supply is
-          fixed by definition — as Bitcoin's supply is fixed. No debasement term. The only force
-          acting is real output growth, which flows through as falling prices and rising purchasing
-          power. This is natural, healthy deflation: the economy becoming more abundant per unit
-          of money.
+          This is the formula implemented on the dashboard. The decomposition is not a new model —
+          it is a more careful description of what the existing formula computes. M2/GDP is not an
+          arbitrary choice. It emerges from the ratio of two observable growth rates. The
+          decomposition is the explanation.
         </p>
         <p style={prose}>
-          We calculate THM using M2/GDP rather than assuming a fixed deflation rate. M2/GDP
-          measures the actual excess money creation above what the real economy required — and its
-          inverse is what purchasing power would have been under a fixed supply. This is an
-          approximation of the fixed supply ideal, but a well-grounded one: over 111 years, the
-          gap between raw M2 and M2/GDP equals almost exactly the natural deflation a fixed supply
-          would have delivered. It is not a guess. It is derived from the data.
+          <strong style={{ color: 'var(--text-primary)' }}>What this means for the chart:</strong>{' '}
+          THM rises when Monetary Expansion outpaces Output Growth. The rising THM line is the
+          accumulated excess. For an asset to genuinely preserve value relative to this benchmark,
+          it must keep pace with the rate at which monetary claims have grown above output.
+        </p>
+
+        <h3 style={h3}>What THM is — and what it is not</h3>
+        <p style={prose}>
+          THM stands for Theoretical Hard Money. The name reflects the benchmark's intent: to
+          isolate and quantify the monetary-intensity dimension that distinguishes hard money from
+          fiat. It is a defensible attempt at that isolation, not a simulation of what hard money
+          would have been.
         </p>
         <p style={prose}>
-          <strong style={{ color: 'var(--text-primary)' }}>For the dollar:</strong> both forces are
-          active. M2 has grown at 6.6%/yr since 1913. GDP has grown at 3.0%/yr. The net result:
-          the dollar loses approximately 3.5%/yr in purchasing power — which is what you observe on
-          the charts.
+          A hard money system has one defining characteristic: the supply of monetary claims does
+          not expand relative to economic output. M2/GDP captures exactly that dimension. Under a
+          fixed supply, M2/GDP falls as output grows. Under fiat, it has risen. THM tracks that
+          difference — accumulated from 1913.
+        </p>
+        <p style={prose}>What THM does not claim to be:</p>
+        <ul style={{ ...prose, paddingLeft: 20, marginBottom: 16 }}>
+          <li>A simulation of what would have happened under a gold standard</li>
+          <li>A simulation of what would have happened under Bitcoin</li>
+          <li>The closest possible approximation to hard money</li>
+          <li>A proof that any particular monetary system is superior</li>
+        </ul>
+        <p style={prose}>What THM is:</p>
+        <ul style={{ ...prose, paddingLeft: 20, marginBottom: 16 }}>
+          <li>A benchmark that isolates the monetary-claims-versus-output dimension of hard money</li>
+          <li>A transparent, reproducible signal derived from two observable inputs: M2 and GDP</li>
+          <li>A Version 1 model that is internally coherent and open to refinement as alternative benchmarks are explored</li>
+        </ul>
+
+        <h3 style={h3}>What would happen under a fixed money supply</h3>
+        <p style={prose}>
+          In a fixed supply world — as Bitcoin's supply is fixed — Monetary Expansion equals 1
+          every period. M2 does not grow.
         </p>
         <p style={prose}>
-          The three approaches below differ in how they handle this framework — specifically, whether
-          growing economies are assumed to need proportionally more money (Keynesian) or not
-          (Austrian). But all three are ultimately measuring the same two forces.
+          Output Growth continues. With M2 fixed and GDP rising, Monetary Intensity (M2/GDP)
+          falls. THM would <em>decline</em> as GDP grows:
+        </p>
+        <pre style={{
+          background: 'var(--bg-surface)', border: '1px solid var(--border-default)',
+          borderRadius: 8, padding: '14px 18px', marginBottom: 20,
+          fontFamily: 'var(--font-data)', fontSize: 13, color: 'var(--thm-green)',
+          lineHeight: 1.7, overflowX: 'auto',
+        }}>
+          {`Fixed supply:\nM2 = constant → Monetary Expansion Factor = 1 each period\nGDP grows 3%/yr → Output Growth Factor = 1.03\n\nTHM change each period = 1 / 1.03 ≈ −2.9%/yr`}
+        </pre>
+        <p style={prose}>
+          A falling THM under fixed supply is the correct and expected result — monetary intensity
+          declining as output grows against a fixed supply. This is the natural monetary environment
+          of a hard money world: more output per unit of money, prices gently falling, purchasing
+          power of each unit rising.
+        </p>
+        <p style={prose}>
+          Under fiat, the opposite occurred. Money supply grew faster than output, monetary
+          intensity rose, and THM climbed steeply.
+        </p>
+        <p style={prose}>
+          <strong style={{ color: 'var(--text-primary)' }}>Important clarification:</strong>{' '}
+          THM as implemented is a debasement benchmark — it rises with monetary intensity. It is
+          not a simulation of what a hard money holder accumulates. The name THM refers to the
+          monetary standard the benchmark is designed to represent — not to the direction the line
+          moves. This distinction is real and worth holding clearly.
+        </p>
+
+        <h3 style={h3}>What the Dollar series measures</h3>
+        <p style={prose}>
+          The Dollar is the exact inverse of THM:
+        </p>
+        <pre style={{
+          background: 'var(--bg-surface)', border: '1px solid var(--border-default)',
+          borderRadius: 8, padding: '14px 18px', marginBottom: 20,
+          fontFamily: 'var(--font-data)', fontSize: 13, color: 'var(--thm-green)',
+          lineHeight: 1.7, overflowX: 'auto',
+        }}>
+          {`Dollar(t) = 100² / THM(t)`}
+        </pre>
+        <p style={prose}>
+          The gap between THM and the Dollar at any point is precisely and entirely the
+          accumulated excess of Monetary Expansion over Output Growth. Not an interpretation
+          — a mathematical identity.
+        </p>
+
+        <h3 style={h3}>Purchasing power — what the decomposition explores</h3>
+        <p style={prose}>
+          Monetary intensity (M2/GDP) is one candidate explanation for long-run changes in
+          purchasing power — what money can actually buy. This model explores whether changes in
+          monetary intensity correspond to observed changes in purchasing power over long periods.
+        </p>
+        <p style={prose}>
+          We do not claim the decomposition proves this relationship. We present it as a research
+          question: does this signal correspond to what people actually experienced? The 111-year
+          chart is the evidence. The interpretation follows from the data.
+        </p>
+        <p style={prose}>
+          We flag this distinction because a careful economist would raise it correctly: purchasing
+          power strictly requires a price index. This decomposition derives from M2 and GDP.
+          Whether monetary intensity is a useful proxy for purchasing power is an empirical
+          question, not an algebraic one.
+        </p>
+
+        <h3 style={h3}>The research question</h3>
+        <p style={prose}>
+          This decomposition does not prove Austrian economics. It does not claim M2/GDP is the
+          only valid measure of debasement. It does not assert that monetary expansion is always
+          harmful.
+        </p>
+        <p style={prose}>
+          It asks one empirical question:{' '}
+          <strong style={{ color: 'var(--text-primary)' }}>
+            does this decomposition produce a stable and interpretable signal across 111 years
+            of historical data?
+          </strong>
+        </p>
+        <p style={prose}>
+          If Monetary Intensity tracks recognizable monetary events — accelerates after 1971 when
+          gold convertibility ended, spikes during COVID money printing, contracts during tight
+          money periods — the decomposition has empirical content. If the gap between THM and the
+          Dollar corresponds to what people experienced as purchasing power loss, the model is
+          useful.
+        </p>
+        <p style={prose}>
+          The charts below show the historical record. The interpretation follows from the data,
+          not from the framework.
+        </p>
+
+        <h3 style={h3}>What comes next</h3>
+        <p style={prose}>
+          Version 1 uses M2/GDP as the single benchmark. Alternative benchmarks are the logical
+          next step:
+        </p>
+        <ul style={{ ...prose, paddingLeft: 20, marginBottom: 16 }}>
+          <li><strong style={{ color: 'var(--text-primary)' }}>Monetary Base / GDP:</strong> base money instead of M2 — a robustness test on the money definition</li>
+          <li><strong style={{ color: 'var(--text-primary)' }}>Total Credit / GDP:</strong> credit expansion may capture debasement effects M2 misses</li>
+          <li><strong style={{ color: 'var(--text-primary)' }}>Total Debt / GDP:</strong> how much future output has already been pledged</li>
+          <li><strong style={{ color: 'var(--text-primary)' }}>Broad Liquidity / GDP:</strong> shadow banking and offshore dollar effects</li>
+        </ul>
+        <p style={prose}>
+          If multiple benchmarks point in the same direction, the thesis strengthens. If they
+          diverge, something important is learned. We treat Version 1 as the foundation, not
+          the final word.
         </p>
 
         <hr style={{ border: 'none', borderTop: '1px solid var(--border-subtle)', margin: '40px 0 0' }} />

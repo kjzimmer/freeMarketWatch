@@ -31,26 +31,40 @@ FreeMarketWatch addresses it with a single change: replace the dollar with THM a
 
 ## THM — The Benchmark
 
-### What it is
+### How it is calculated — Version 1
 
-THM (Theoretical Hard Money) is a synthetic purchasing power index. It is not a real asset, not a price, and not fetched from any external source. It is computed from historical data to represent what an honest monetary system would look like: one in which the money supply is fixed — cannot be expanded by any authority — so that productivity gains in the real economy flow through as gradually falling prices, increasing the purchasing power of every unit of money held.
+THM is constructed by decomposing economic history into two separable and observable forces:
 
-Bitcoin embodies this ideal: provably fixed supply of 21 million, no controlling authority, issuance governed by mathematics not policy. THM represents what Bitcoin looks like as a mature monetary standard — the destination, with the adoption phase factored out.
+**Monetary Expansion:** Each period, the money supply (M2) grows. More monetary claims are issued per unit of real output. Monetary Intensity — M2/GDP — rises.
 
-We calculate THM using M2/GDP — the ratio of money supply growth above real economic output. This is an approximation of the fixed supply ideal: M2/GDP measures how much faster the money supply grew than the economy required, and the inverse of that excess is what purchasing power would have looked like under a fixed supply. Rather than assume a deflation rate, we derive it from 111 years of real data. The full methodology is in The Lens.
+**Output Growth:** Each period, the real economy expands. GDP growth includes population growth, capital accumulation, and productivity gains together. When GDP grows faster than M2, Monetary Intensity falls. When M2 grows faster than GDP, it rises.
 
-### What is currently implemented
+THM accumulates the ratio of Monetary Expansion to Output Growth, compounded from 1913:
 
-The dashboard THM line is calculated using the **M2/GDP ratio** — the ratio of broad money supply to real economic output. When M2 grows faster than GDP, the excess represents pure monetary debasement. THM tracks the cumulative growth of this excess, indexed to 100 at the chart window start.
+```
+THM(t) = 100 × (M2_t / GDP_t) / (M2_1913 / GDP_1913)
+```
 
-**Formula:** `THM(t) = 100 × (M2_t / GDP_t) / (M2_start / GDP_start)`
+This is what is implemented on the dashboard. The decomposition explains where the formula comes from: the ratio of two observable growth rates. M2/GDP is not an arbitrary choice — it emerges from the decomposition.
 
-**All dashboard assets are deflated using the same M2/GDP series.** This makes the benchmark and the deflator theoretically consistent — THM and USD purchasing power are exact mathematical inverses (USD × THM = 100² at every point). CPI is retained in the database and continues to be fetched, but is used only for the THM_CPI variant in the three-method comparison on /lens/thm. CPI is no longer the primary deflator for dashboard assets.
+**What THM is:** a benchmark that isolates and quantifies the monetary-intensity dimension that distinguishes hard money from fiat. It is a defensible attempt at that isolation, not a simulation of what hard money would have been.
 
-Data sources used in the calculation:
+Hard money has one defining characteristic: monetary claims do not expand relative to economic output. M2/GDP captures exactly that dimension. Under a fixed supply, M2/GDP falls as output grows. Under fiat, it has risen. THM tracks that difference.
+
+**Under a fixed money supply** — as Bitcoin's supply is fixed — Output Growth continues but M2 stays constant. Monetary Intensity falls. THM would decline at the real output growth rate. That falling line is the natural environment of a hard money world: more output per unit of money, prices gently falling, purchasing power of each unit rising. Under fiat, the reverse occurred. THM as implemented is a debasement benchmark — it rises with monetary intensity. The name refers to the monetary standard it represents, not to the direction the line moves.
+
+**The Dollar** is the exact mathematical inverse of THM (Dollar(t) = 100² / THM(t)). The gap between them at any point is precisely the accumulated excess of Monetary Expansion over Output Growth — verified algebraically and numerically. All dashboard assets are deflated using the same M2/GDP series, making THM and the asset deflator theoretically consistent (USD × THM = 100² at every point).
+
+**Purchasing power:** monetary intensity is one candidate explanation for long-run changes in purchasing power. This model explores whether changes in M2/GDP correspond to observed changes in purchasing power over long periods. We present it as a research question, not a proof. The 111-year chart is the evidence.
+
+**Version 1** uses M2/GDP as the single benchmark. Alternative benchmarks — Monetary Base/GDP, Total Credit/GDP, Total Debt/GDP — are identified as future research. If multiple measures point in the same direction, the thesis strengthens. If they diverge, something important is learned. We treat this as the foundation, not the final word.
+
+Data sources:
 - **M2:** FRED M2SL (monthly, 1959–present) averaged to annual; Friedman & Schwartz historical data (1913–1958)
 - **Real GDP:** FRED GDPC1 (quarterly, 1947–present) averaged to annual; BEA historical estimates (1913–1946)
 - Annual M2/GDP ratios are linearly interpolated to monthly points for the 1Y/5Y/10Y dashboard windows
+
+CPI is retained in the database and continues to be fetched, but is used only for the THM_CPI variant in the three-method comparison on /lens/thm. CPI is no longer the primary deflator for dashboard assets.
 
 ### What this means for the chart
 

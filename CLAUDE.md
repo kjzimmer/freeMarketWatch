@@ -114,9 +114,11 @@ freemarketwatch/
 ### THM (Theoretical Hard Money)
 - Synthetic benchmark. Not fetched from any API. Computed from M2 and GDP data.
 - Displayed as a **dashed lime-green line** on every chart
-- Everything above THM = gaining real purchasing power. Everything below = losing it.
+- Everything above THM = keeping pace with or exceeding monetary expansion. Everything below = losing ground.
+- **Framing (v4):** THM is a *monetary intensity benchmark* — it measures how much monetary claims (M2) have grown relative to real output (GDP), accumulated from 1913. It is not a simulation of what hard money would have been; it isolates the monetary-claims-versus-output dimension that distinguishes hard money from fiat. Purchasing power is presented as a research question the data explores, not a direct measurement claim.
 - **Primary formula (dashboard):** `THM(t) = 100 × (M2_t / GDP_t) / (M2_start / GDP_start)`
-  - THM represents a fixed supply world — as Bitcoin's supply is fixed. M2/GDP is the empirically grounded approximation: it measures how much faster money grew than the economy required, and its inverse is what purchasing power would have been under that fixed supply. Not a guessed deflation rate — 111 years of actual data.
+  - Derived from decomposing history into Monetary Expansion Factor (M2_t/M2_{t-1}) and Output Growth Factor (GDP_t/GDP_{t-1}). THM accumulates their ratio each period. M2/GDP is not an arbitrary choice — it emerges from this decomposition.
+  - Under a fixed supply (Bitcoin-like), M2 is constant, so M2/GDP *falls* as GDP grows — THM would *decline*. The rising THM line is the fiat deviation from that baseline: monetary intensity growing above output.
   - Annual M2 and GDP data linearly interpolated to monthly chart points
   - Implemented in `server/lib/thm-m2gdp.ts`
 - **Analytical fallback:** `THM(t) = 100 × (1.02)^years_elapsed` — used only if M2/GDP data unavailable
@@ -125,6 +127,7 @@ freemarketwatch/
   - `thm_cpi = 100 × (CPI_t / CPI_1913)`
   - `thm_m2gdp = 100 × (M2_t / GDP_t) / (M2_1913 / GDP_1913)` ← preferred
   - `thm_m2raw = 100 × (M2_t / M2_1913)`
+- **Version 1:** future research to test alternative benchmarks (Monetary Base/GDP, Total Credit/GDP, Total Debt/GDP)
 
 ### USD Purchasing Power
 - Deflator: M2/GDP ratio (FRED M2SL + GDPC1, annual, interpolated to monthly)
