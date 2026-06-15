@@ -87,6 +87,7 @@ export default function Footer() {
           Architecture of Abundance ↗
         </a>
       </div>
+      </div>
     </footer>
   );
 }
