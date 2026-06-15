@@ -11,7 +11,8 @@ export type ActBlock =
   | { type: 'faq-blocks'; items: { question: string; answer: string; category?: string }[] }
   | { type: 'insight-blocks'; items: { title: string; body: string }[] }
   | { type: 'book-cards'; items: { title: string; author: string; description: string; tag: string }[] }
-  | { type: 'cta-panels'; left: { title: string; label: string; to: string; body?: string }; right: { title: string; label: string; note: string; body?: string } };
+  | { type: 'three-level'; title: string; levels: { label: string; body: string; link: { text: string; href: string; external: boolean } }[] }
+  | { type: 'cta-panels'; left: { title: string; label: string; to: string; body?: string }; right: { title: string; label: string; body?: string; note?: string; href?: string; external?: boolean } };
 
 export interface Act {
   n: number;
@@ -538,18 +539,56 @@ export const ACTS: Act[] = [
         text: 'The monetary system is not a law of nature. It is a human invention — and human inventions can be changed. Understanding is where that change begins.',
       },
       {
+        type: 'paragraph',
+        text: 'Understanding the monetary system changes what you see. It also changes what you can build.',
+      },
+      {
+        type: 'paragraph',
+        text: 'The extraction mechanism described across these six acts operates at scale because most people never learn to name it. Communities that do — that understand where the value goes and why — can begin making decisions that don\'t feed that mechanism. Not through protest. Not through political action. Through the deliberate construction of economic relationships built on a different foundation.',
+      },
+      {
+        type: 'paragraph',
+        text: 'This is not a distant possibility. It is already happening, in forms that range from individual savings decisions to community exchange networks to nation-state monetary policy. The common thread is not ideology. It is understanding — and the choices that follow naturally from it.',
+      },
+      {
+        type: 'paragraph',
+        text: 'Decentralization is not a political position. It is what emerges when enough people in a community understand the extraction mechanism and choose to build their exchange on a foundation that doesn\'t contain it.',
+      },
+      {
+        type: 'three-level',
+        title: 'Three levels of response',
+        levels: [
+          {
+            label: 'Individual',
+            body: 'Hard money savings. Honest measurement of your own financial position against a benchmark that doesn\'t shrink. The dashboard is the starting point.',
+            link: { text: 'Go to Dashboard →', href: '/dashboard', external: false },
+          },
+          {
+            label: 'Community',
+            body: 'Circular economies — local exchange networks built on hard money principles. Communities where work and savings hold their value. Where the honest person is not systematically disadvantaged. Architecture of Abundance explores this in depth.',
+            link: { text: 'abundancearchitecture.world ↗', href: 'https://abundancearchitecture.world', external: true },
+          },
+          {
+            label: 'Systemic',
+            body: 'Bitcoin as a monetary transition — not a trading opportunity but a fundamental change in what money is and who controls it. The adoption index tracks how far along that transition the world actually is.',
+            link: { text: 'Bitcoin Adoption Index →', href: '/lens/adoption', external: false },
+          },
+        ],
+      },
+      {
         type: 'cta-panels',
         left: {
           title: 'Watch the system live',
           label: 'Explore the dashboard →',
-          to: '/',
+          to: '/dashboard',
           body: 'The freeMarketWatch dashboard tracks currencies, purchasing power, and monetary data in real time — the system described in these six acts, measured and visible as it unfolds.',
         },
         right: {
-          title: 'Find your community',
-          label: 'Coming soon',
-          note: 'Community resources — coming in a future update.',
-          body: 'Communities around the world are already building circular bitcoin economies. The transition from understanding to living on a bitcoin standard happens together, not alone.',
+          title: 'Go deeper',
+          label: 'abundancearchitecture.world ↗',
+          href: 'https://abundancearchitecture.world',
+          external: true,
+          body: 'The community question — what to build once you understand the problem — is explored at Architecture of Abundance.',
         },
       },
     ],

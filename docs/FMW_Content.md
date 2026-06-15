@@ -11,14 +11,14 @@
 | `/dashboard` | Dashboard | **Live** | Live data + static copy | Three chart panels (currency, riskoff, riskon); 1/5/10Y window selector; BTC toggle; collapsible THM explainer; Lens callout card |
 | `/about` | About | **Live** | Static | Site mission, how to read the charts, methodology note, data sources, what's next; links to `/lens` and `/lens/thm` |
 | `/contact` | Contact | **Live** | Static + form | Contact form; links to education series |
-| `/lens` | The Lens Hub | **Live** | Static | Four-column layout; cards for each Lens component with status badges (Established / Open questions / In development); Component 4 = Bitcoin Adoption Index |
+| `/lens` | The Lens Hub | **Live** | Static | Four-column card grid with status badges; "What This Points Toward" horizon section below cards (three horizons: Individual/Community/Systemic) with Architecture of Abundance link |
 | `/lens/fiat` | Why the Fiat Lens Distorts | **Live** | Static | Intro text; six act-summary cards; closing transition to `/lens/thm`; downloads section |
 | `/lens/fiat/act/1` | Act 1: Why Money Exists | **Live** | Static | Paragraph, stat-cards, pullquote, coming-next blocks |
 | `/lens/fiat/act/2` | Act 2: What Makes Good Money | **Live** | Static | Paragraph, property-grid, comparison-table blocks |
 | `/lens/fiat/act/3` | Act 3: The Blast Radius | **Live** | Static | Paragraph, comparison-table, insight-blocks |
 | `/lens/fiat/act/4` | Act 4: Hard Money Changes Everything | **Live** | Static | Paragraph, four-cards, two-col-table blocks |
 | `/lens/fiat/act/5` | Act 5: Bitcoin | **Live** | Static | Paragraph, comparison-matrix, faq-blocks, book-cards |
-| `/lens/fiat/act/6` | Act 6: What Comes Next | **Live** | Static | Paragraph, cta-panels blocks |
+| `/lens/fiat/act/6` | Act 6: What Comes Next | **Live** | Static | Paragraph, pullquote, insight-blocks, faq-blocks, book-cards, three-level, cta-panels blocks; closes with Architecture of Abundance links |
 | `/lens/thm` | The THM Lens | **Live** | Static + live charts | Full v3 methodology text; four Recharts research charts (three THM variant lines, purchasing power of dollar, output deflation gap, stolen deflation); links to `/lens/investing` |
 | `/lens/investing` | Investing Through the THM Lens | **Live** | Static | Six sections of investing framework theory; five investment criteria cards; dashboard implications section (explicitly marked work in progress) |
 | `/lens/adoption` | Bitcoin Adoption Index | **In development** | Static (placeholder) | "In Development" badge; three sections: what this measures, why it matters, notify-me form; form uses `VITE_FORMSPREE_ENDPOINT` env var |

@@ -18,14 +18,19 @@ export default function Footer() {
         maxWidth: 1600,
         margin: '0 auto',
         display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: 12,
+        flexDirection: 'column',
+        gap: 16,
         fontFamily: 'var(--font-data)',
         fontSize: 11,
         color: 'var(--text-muted)',
         letterSpacing: '0.05em',
+      }}>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: 12,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
           <span>© 2026 FreeMarketWatch · Not financial advice</span>
@@ -68,6 +73,19 @@ export default function Footer() {
           </button>
           <span>Data updated daily</span>
         </div>
+      </div>
+      <div style={{ textAlign: 'center', fontSize: 10, color: 'var(--text-faint)', letterSpacing: '0.06em' }}>
+        A companion project —{' '}
+        <a
+          href="https://abundancearchitecture.world"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: 'var(--text-faint)', textDecoration: 'none' }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
+          onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-faint)')}
+        >
+          Architecture of Abundance ↗
+        </a>
       </div>
     </footer>
   );

@@ -33,8 +33,8 @@ The Lens is the intellectual foundation of the site. Four components:
   - [Act 3: The Blast Radius](https://freemarketwatch.world/lens/fiat/act/3): How fiat debasement works in practice
   - [Act 4: Hard Money Changes Everything](https://freemarketwatch.world/lens/fiat/act/4): How bad money distorts investment, destroys savings, warps economic decision-making
   - [Act 5: Bitcoin](https://freemarketwatch.world/lens/fiat/act/5): Bitcoin as sound money — fixed supply, no authority
-  - [Act 6: What Comes Next](https://freemarketwatch.world/lens/fiat/act/6): The path forward under hard money assumptions
-- [The THM Lens](https://freemarketwatch.world/lens/thm): Full methodology — what THM is, how it is computed, three measurement approaches (CPI-based, M2/GDP-based, M2-raw), why M2/GDP is preferred, honest acknowledgment of open questions. Includes four research charts comparing methods over 111 years.
+  - [Act 6: What Comes Next](https://freemarketwatch.world/lens/fiat/act/6): The path forward — three levels of response (individual savings, community circular economies, systemic Bitcoin transition). Links to Architecture of Abundance companion site.
+- [The THM Lens](https://freemarketwatch.world/lens/thm): Full methodology — THM as a monetary intensity benchmark (M2/GDP decomposition), three measurement approaches (CPI-based, M2/GDP-based, M2-raw), why M2/GDP is preferred, honest acknowledgment of open questions. Purchasing power treated as a research question, not a measurement claim. Includes four research charts over 111 years.
 - [Investing Through the THM Lens](https://freemarketwatch.world/lens/investing): How investment analysis changes when hard money is the base position. First-principles framework; dashboard tools in development.
 - [Bitcoin Adoption Index](https://freemarketwatch.world/lens/adoption): In development. Will track Bitcoin's transition from asset to monetary standard via Lightning Network volume, merchant acceptance, and payment flows.
 

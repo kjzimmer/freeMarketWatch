@@ -539,12 +539,125 @@ function BookCards({ items }: { items: { title: string; author: string; descript
   );
 }
 
+function ThreeLevel({ title, levels }: {
+  title: string;
+  levels: { label: string; body: string; link: { text: string; href: string; external: boolean } }[];
+}) {
+  return (
+    <div style={{ margin: '32px 0' }}>
+      <div style={{
+        fontFamily: 'var(--font-display)',
+        fontSize: 18,
+        fontWeight: 700,
+        color: 'var(--text-primary)',
+        marginBottom: 20,
+      }}>
+        {title}
+      </div>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+        gap: 12,
+      }}>
+        {levels.map(({ label, body, link }) => (
+          <div key={label} style={{
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border-default)',
+            borderRadius: 8,
+            padding: '20px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 10,
+          }}>
+            <div style={{
+              fontFamily: 'var(--font-data)',
+              fontSize: 11,
+              fontWeight: 700,
+              color: 'var(--thm-green)',
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+            }}>
+              {label}
+            </div>
+            <p style={{ ...P, fontSize: 14, marginBottom: 0, flex: 1 }}>{body}</p>
+            {link.external ? (
+              <a
+                href={link.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  fontFamily: 'var(--font-data)',
+                  fontSize: 12,
+                  color: 'var(--thm-green)',
+                  textDecoration: 'none',
+                  letterSpacing: '0.04em',
+                }}
+              >
+                {link.text}
+              </a>
+            ) : (
+              <Link
+                to={link.href}
+                style={{
+                  fontFamily: 'var(--font-data)',
+                  fontSize: 12,
+                  color: 'var(--thm-green)',
+                  textDecoration: 'none',
+                  letterSpacing: '0.04em',
+                }}
+              >
+                {link.text}
+              </Link>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function CtaPanels({
   left, right,
 }: {
   left: { title: string; label: string; to: string; body?: string };
-  right: { title: string; label: string; note: string; body?: string };
+  right: { title: string; label: string; body?: string; note?: string; href?: string; external?: boolean };
 }) {
+  const rightPanel = (
+    <div style={{
+      background: right.href ? 'rgba(168,255,120,0.04)' : 'var(--bg-surface)',
+      border: `1px solid ${right.href ? 'var(--border-accent)' : 'var(--border-default)'}`,
+      borderRadius: 12,
+      padding: '28px',
+      textAlign: 'center',
+      opacity: right.href ? 1 : 0.6,
+      height: '100%',
+      boxSizing: 'border-box' as const,
+    }}>
+      <div style={{
+        fontFamily: 'var(--font-display)',
+        fontSize: 16,
+        fontWeight: 700,
+        color: 'var(--text-primary)',
+        marginBottom: right.body ? 12 : 16,
+      }}>
+        {right.title}
+      </div>
+      {right.body && (
+        <p style={{ ...P, fontSize: 13, marginBottom: 16, textAlign: 'left' }}>
+          {right.body}
+        </p>
+      )}
+      <div style={{
+        fontFamily: 'var(--font-data)',
+        fontSize: right.href ? 12 : 11,
+        color: right.href ? 'var(--thm-green)' : 'var(--text-muted)',
+        letterSpacing: '0.06em',
+      }}>
+        {right.label}
+      </div>
+    </div>
+  );
+
   return (
     <div style={{
       display: 'grid',
@@ -571,9 +684,7 @@ function CtaPanels({
             {left.title}
           </div>
           {left.body && (
-            <p style={{
-              ...P, fontSize: 13, marginBottom: 16, textAlign: 'left',
-            }}>
+            <p style={{ ...P, fontSize: 13, marginBottom: 16, textAlign: 'left' }}>
               {left.body}
             </p>
           )}
@@ -587,39 +698,13 @@ function CtaPanels({
           </div>
         </div>
       </Link>
-      <div style={{
-        background: 'var(--bg-surface)',
-        border: '1px solid var(--border-default)',
-        borderRadius: 12,
-        padding: '28px',
-        textAlign: 'center',
-        opacity: 0.6,
-      }}>
-        <div style={{
-          fontFamily: 'var(--font-display)',
-          fontSize: 16,
-          fontWeight: 700,
-          color: 'var(--text-primary)',
-          marginBottom: right.body ? 12 : 16,
-        }}>
-          {right.title}
-        </div>
-        {right.body && (
-          <p style={{
-            ...P, fontSize: 13, marginBottom: 16, textAlign: 'left',
-          }}>
-            {right.body}
-          </p>
-        )}
-        <div style={{
-          fontFamily: 'var(--font-data)',
-          fontSize: 11,
-          color: 'var(--text-muted)',
-          letterSpacing: '0.06em',
-        }}>
-          {right.note}
-        </div>
-      </div>
+      {right.href && right.external ? (
+        <a href={right.href} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+          {rightPanel}
+        </a>
+      ) : (
+        rightPanel
+      )}
     </div>
   );
 }
@@ -640,6 +725,7 @@ function Block({ block }: { block: ActBlock }) {
     case 'faq-blocks':       return <FaqBlocks items={block.items} />;
     case 'insight-blocks':   return <InsightBlocks items={block.items} />;
     case 'book-cards':       return <BookCards items={block.items} />;
+    case 'three-level':      return <ThreeLevel title={block.title} levels={block.levels} />;
     case 'cta-panels':       return <CtaPanels left={block.left} right={block.right} />;
     default:                 return null;
   }
@@ -790,7 +876,7 @@ export default function LearnAct() {
           ) : (
             <div style={{ display: 'flex', gap: 12 }}>
               <Link
-                to="/"
+                to="/dashboard"
                 style={{
                   fontFamily: 'var(--font-data)',
                   fontSize: 11,

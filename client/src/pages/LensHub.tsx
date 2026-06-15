@@ -203,6 +203,133 @@ export default function LensHub() {
 
         <hr style={{ border: 'none', borderTop: '1px solid var(--border-subtle)', marginBottom: 40 }} />
 
+        {/* What This Points Toward */}
+        <div style={{ marginBottom: 64 }}>
+          <h2 style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: 22,
+            fontWeight: 700,
+            color: 'var(--text-primary)',
+            marginBottom: 20,
+            marginTop: 0,
+          }}>
+            What This Points Toward
+          </h2>
+          <p style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: 15,
+            color: 'var(--text-secondary)',
+            lineHeight: 1.75,
+            maxWidth: 600,
+            marginBottom: 36,
+          }}>
+            The Lens makes the current system legible. What you do with that understanding is
+            a separate question — and a larger one. Three horizons follow from what the Lens
+            presents. They are not prescriptions. They are where the logic leads.
+          </p>
+
+          {[
+            {
+              borderColor: '#a8ff78',
+              label: 'FIRST HORIZON',
+              heading: 'Honest measurement',
+              body: 'The dashboard gives you a benchmark that doesn\'t shrink. Most financial analysis uses the dollar as its unit of measure — a unit that loses purchasing power every year. Replacing it with THM changes what you see. Start there.',
+              link: { text: 'Go to the Dashboard →', href: '/dashboard', external: false },
+            },
+            {
+              borderColor: '#fbbf24',
+              label: 'SECOND HORIZON',
+              heading: 'Circular economies',
+              body: 'When a community prices, saves, and exchanges in hard money together, the extraction mechanism loses its grip. This is not a political project. It is an economic one — built from the bottom up, one relationship at a time. Architecture of Abundance explores what that looks like in practice.',
+              link: { text: 'abundancearchitecture.world ↗', href: 'https://abundancearchitecture.world', external: true },
+            },
+            {
+              borderColor: '#f7931a',
+              label: 'THIRD HORIZON',
+              heading: 'Monetary transition',
+              body: 'Bitcoin is the first monetary asset in history with a provably fixed supply, no controlling authority, and the portability that gold never had. Whether it becomes the foundation of a new monetary standard is the largest economic question of this era. The adoption index tracks the answer in real time.',
+              link: { text: 'Bitcoin Adoption Index →', href: '/lens/adoption', external: false },
+            },
+          ].map(({ borderColor, label, heading, body, link }) => (
+            <div key={label} style={{
+              borderLeft: `2px solid ${borderColor}`,
+              paddingLeft: 20,
+              marginBottom: 32,
+            }}>
+              <div style={{
+                fontFamily: 'var(--font-data)',
+                fontSize: 11,
+                fontWeight: 700,
+                color: borderColor,
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase' as const,
+                marginBottom: 6,
+              }}>
+                {label}
+              </div>
+              <div style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: 17,
+                fontWeight: 600,
+                color: 'var(--text-primary)',
+                marginBottom: 8,
+              }}>
+                {heading}
+              </div>
+              <p style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: 14,
+                color: 'var(--text-secondary)',
+                lineHeight: 1.7,
+                marginBottom: 10,
+              }}>
+                {body}
+              </p>
+              {link.external ? (
+                <a
+                  href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    fontFamily: 'var(--font-data)',
+                    fontSize: 12,
+                    color: borderColor,
+                    textDecoration: 'none',
+                    letterSpacing: '0.04em',
+                  }}
+                >
+                  {link.text}
+                </a>
+              ) : (
+                <Link
+                  to={link.href}
+                  style={{
+                    fontFamily: 'var(--font-data)',
+                    fontSize: 12,
+                    color: borderColor,
+                    textDecoration: 'none',
+                    letterSpacing: '0.04em',
+                  }}
+                >
+                  {link.text}
+                </Link>
+              )}
+            </div>
+          ))}
+
+          <p style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: 14,
+            color: 'var(--text-muted)',
+            fontStyle: 'italic',
+            marginTop: 32,
+          }}>
+            These horizons are not independent. Each one makes the next more possible.
+          </p>
+        </div>
+
+        <hr style={{ border: 'none', borderTop: '1px solid var(--border-subtle)', marginBottom: 40 }} />
+
         {/* How this section is organized */}
         <div style={{ maxWidth: 680 }}>
           <h2 style={{
