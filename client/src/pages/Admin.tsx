@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '../lib/apiFetch';
 import AdminContact from '../components/admin/AdminContact';
 import AdminPeople from '../components/admin/AdminPeople';
+import AdminAnalytics from '../components/admin/AdminAnalytics';
 
-type Tab = 'inbox' | 'people';
+type Tab = 'inbox' | 'people' | 'analytics';
 
 export default function Admin() {
   const navigate = useNavigate();
@@ -52,7 +53,7 @@ export default function Admin() {
             FMW Admin
           </div>
           <div style={{ display: 'flex', gap: 4 }}>
-            {([['inbox', 'Inbox'], ['people', 'People']] as [Tab, string][]).map(([tab, label]) => (
+            {([['inbox', 'Inbox'], ['people', 'People'], ['analytics', 'Analytics']] as [Tab, string][]).map(([tab, label]) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -118,7 +119,7 @@ export default function Admin() {
           color: 'var(--text-primary)',
           marginBottom: 24,
         }}>
-          {activeTab === 'inbox' ? 'Inbox' : 'People'}
+          {{ inbox: 'Inbox', people: 'People', analytics: 'Analytics' }[activeTab]}
         </div>
 
         {activeTab === 'inbox' && (
@@ -126,6 +127,9 @@ export default function Admin() {
         )}
         {activeTab === 'people' && (
           <AdminPeople />
+        )}
+        {activeTab === 'analytics' && (
+          <AdminAnalytics />
         )}
       </div>
     </div>

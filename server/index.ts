@@ -11,6 +11,7 @@ import learnRouter from './routes/learn';
 import authRouter from './routes/auth';
 import contactRouter from './routes/contact';
 import adminPeopleRouter from './routes/adminPeople';
+import analyticsRouter from './routes/analytics';
 import { startScheduler } from './jobs/scheduler';
 
 const app = express();
@@ -33,6 +34,7 @@ app.use('/api/learn', learnRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/contact', contactRouter);
 app.use('/api/admin/people', adminPeopleRouter);
+app.use('/api/analytics', analyticsRouter);
 
 // Serve the React build in production — must be after API routes
 if (isProd) {
