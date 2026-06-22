@@ -11,13 +11,15 @@ import LensTHM from './pages/LensTHM';
 import LensInvesting from './pages/LensInvesting';
 import LensAdoption from './pages/LensAdoption';
 import LearnAct from './pages/LearnAct';
+import AdminLogin from './pages/AdminLogin';
+import Admin from './pages/Admin';
 
 function RedirectLegacyAct() {
   const { n } = useParams<{ n: string }>();
   return <Navigate to={`/lens/fiat/act/${n ?? '1'}`} replace />;
 }
 
-export default function App() {
+function PublicLayout() {
   return (
     <>
       <NavBar />
@@ -44,5 +46,15 @@ export default function App() {
       </Routes>
       <Footer />
     </>
+  );
+}
+
+export default function App() {
+  return (
+    <Routes>
+      <Route path="/admin/login"  element={<AdminLogin />} />
+      <Route path="/admin"        element={<Admin />} />
+      <Route path="/*"            element={<PublicLayout />} />
+    </Routes>
   );
 }

@@ -285,16 +285,26 @@ ON CONFLICT (ticker) DO UPDATE SET
 -- ============================================================
 
 -- ── USER AUTH & PREFERENCES ──────────────────────────────────
+-- Live — created by migration 003_auth_and_admin.sql
+--
 -- CREATE TABLE user_accounts (
 --   id              UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
 --   email           VARCHAR(255)  UNIQUE NOT NULL,
---   password_hash   VARCHAR(255),             -- NULL for OAuth-only accounts
+--   password_hash   VARCHAR(255)  NOT NULL,
+--   is_admin        BOOLEAN       NOT NULL DEFAULT FALSE,
 --   access_tier     VARCHAR(20)   NOT NULL DEFAULT 'free',
---                                             -- 'free' | 'paid' | 'institutional'
 --   email_verified  BOOLEAN       NOT NULL DEFAULT FALSE,
 --   created_at      TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
 --   updated_at      TIMESTAMPTZ   NOT NULL DEFAULT NOW()
 -- );
+--
+-- ── ADMIN CRM ────────────────────────────────────────────────
+-- Live — created by migration 003_auth_and_admin.sql
+--
+-- CREATE TABLE admin_people (...)         -- one record per unique contact email
+-- CREATE TABLE admin_contact_messages (...)  -- linked to admin_people
+--
+-- ── USER SESSIONS & PREFERENCES (future) ─────────────────────
 --
 -- CREATE TABLE user_sessions (
 --   id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -307,10 +317,10 @@ ON CONFLICT (ticker) DO UPDATE SET
 --
 -- CREATE TABLE user_preferences (
 --   user_id              UUID      PRIMARY KEY REFERENCES user_accounts(id) ON DELETE CASCADE,
---   btc_as               VARCHAR(10) NOT NULL DEFAULT 'currency',  -- 'currency' | 'riskon'
+--   btc_as               VARCHAR(10) NOT NULL DEFAULT 'currency',
 --   timeframe_years      SMALLINT  NOT NULL DEFAULT 10,
 --   explainer_collapsed  BOOLEAN   NOT NULL DEFAULT FALSE,
---   log_scale_panels     JSONB     NOT NULL DEFAULT '{}',          -- { panelId: boolean }
+--   log_scale_panels     JSONB     NOT NULL DEFAULT '{}',
 --   created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 --   updated_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
 -- );

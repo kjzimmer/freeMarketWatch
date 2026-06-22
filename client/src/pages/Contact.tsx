@@ -44,17 +44,13 @@ export default function Contact() {
   const [formState, setFormState] = useState<FormState>('idle');
   const [submittedEmail, setSubmittedEmail] = useState('');
 
-  const endpoint = import.meta.env.VITE_FORMSPREE_ENDPOINT as string | undefined;
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!endpoint) return;
-
     setFormState('submitting');
     setSubmittedEmail(email);
 
     try {
-      const res = await fetch(endpoint, {
+      const res = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, subject, message }),
@@ -121,21 +117,6 @@ export default function Contact() {
           </div>
         ) : (
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-
-            {!endpoint && (
-              <div style={{
-                background: 'rgba(248,113,113,0.08)',
-                border: '1px solid rgba(248,113,113,0.25)',
-                borderRadius: 8,
-                padding: '12px 16px',
-                fontFamily: 'var(--font-data)',
-                fontSize: 11,
-                color: 'var(--loss)',
-                letterSpacing: '0.04em',
-              }}>
-                Contact form not yet configured. Please add VITE_FORMSPREE_ENDPOINT to your environment variables.
-              </div>
-            )}
 
             <div>
               <label style={labelStyle}>Name *</label>
@@ -212,7 +193,7 @@ export default function Contact() {
 
             <button
               type="submit"
-              disabled={formState === 'submitting' || !endpoint}
+              disabled={formState === 'submitting'}
               style={{
                 fontFamily: 'var(--font-data)',
                 fontSize: 12,
@@ -223,8 +204,8 @@ export default function Contact() {
                 border: '1px solid var(--border-accent)',
                 background: formState === 'submitting' ? 'transparent' : 'var(--thm-green-dim)',
                 color: 'var(--thm-green)',
-                cursor: formState === 'submitting' || !endpoint ? 'not-allowed' : 'pointer',
-                opacity: formState === 'submitting' || !endpoint ? 0.5 : 1,
+                cursor: formState === 'submitting' ? 'not-allowed' : 'pointer',
+                opacity: formState === 'submitting' ? 0.5 : 1,
                 transition: 'opacity 0.15s',
                 alignSelf: 'flex-start',
               }}

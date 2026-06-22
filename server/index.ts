@@ -8,6 +8,9 @@ import seriesRouter from './routes/series';
 import instrumentsRouter from './routes/instruments';
 import healthRouter from './routes/health';
 import learnRouter from './routes/learn';
+import authRouter from './routes/auth';
+import contactRouter from './routes/contact';
+import adminPeopleRouter from './routes/adminPeople';
 import { startScheduler } from './jobs/scheduler';
 
 const app = express();
@@ -27,6 +30,9 @@ app.use('/api/series', seriesRouter);
 app.use('/api/instruments', instrumentsRouter);
 app.use('/api/health', healthRouter);
 app.use('/api/learn', learnRouter);
+app.use('/api/auth', authRouter);
+app.use('/api/contact', contactRouter);
+app.use('/api/admin/people', adminPeopleRouter);
 
 // Serve the React build in production — must be after API routes
 if (isProd) {

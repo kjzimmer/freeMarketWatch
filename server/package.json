@@ -15,20 +15,25 @@
     "jobs:compute-pp": "tsx jobs/computePPSeries.ts",
     "jobs:fetch-cpi-full": "tsx jobs/fetchCPI.ts --full",
     "jobs:fetch-m2gdp": "tsx jobs/fetchM2GDP.ts",
-    "db:seed-thm": "tsx db/seeds/thm_historical_data.ts"
+    "db:seed-thm": "tsx db/seeds/thm_historical_data.ts",
+    "create-admin": "tsx scripts/create-admin.ts"
   },
   "dependencies": {
     "@types/cors": "^2.8.19",
     "axios": "^1.7.9",
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.3",
     "node-cron": "^3.0.3",
     "pg": "^8.13.3",
     "yahoo-finance2": "^2.11.3"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^3.0.0",
     "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22.10.7",
     "@types/node-cron": "^3.0.11",
     "@types/pg": "^8.11.10",
