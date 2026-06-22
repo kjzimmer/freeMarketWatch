@@ -15,6 +15,12 @@ const DOWNLOADS = [
     note: 'Single-session presentation covering all six acts',
   },
   {
+    label: 'Intro Deck — 45-Minute Presentation',
+    file: '/downloads/FMW_Intro45min_v1.2.pptx',
+    tag: 'PPTX',
+    note: 'Condensed intro presentation for a 45-minute session',
+  },
+  {
     label: 'Act 1 — Why Money Exists',
     file: '/downloads/FMW_Session1_v1.2.pptx',
     tag: 'PPTX',
