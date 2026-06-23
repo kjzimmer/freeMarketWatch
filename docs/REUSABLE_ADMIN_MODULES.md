@@ -1,14 +1,131 @@
 # Reusable Admin Modules
 
-Three admin features built for this project are designed to drop into any similar site:
-**People CRM**, **Contact/Inquiries Inbox**, and **Analytics**. This guide documents
-each module in site-agnostic terms so you can replicate them without starting from scratch.
+Three admin features built for FreeMarketWatch, designed to drop into any similar site:
+**JWT Auth**, **Contact/Inquiries Inbox + People CRM**, and **Cloudflare Analytics**.
 
 All three share the same foundation:
-- **Backend**: Node.js + Express + TypeScript
-- **Database**: PostgreSQL via Prisma ORM
+- **Backend**: Node.js + Express + TypeScript, raw `pg` (no ORM)
+- **Database**: PostgreSQL
 - **Auth**: JWT bearer token checked by `requireAdmin` middleware
-- **Frontend**: React + TypeScript, Tailwind CSS, `apiFetch` wrapper
+- **Frontend**: React + TypeScript, CSS-in-JS with CSS custom properties
+
+---
+
+## 0. Auth Foundation
+
+Auth is a prerequisite for all three modules. It must be set up first.
+
+### Data model (SQL)
+
+```sql
+CREATE TABLE user_accounts (
+  id              UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
+  email           VARCHAR(255)  UNIQUE NOT NULL,
+  password_hash   VARCHAR(255)  NOT NULL,
+  is_admin        BOOLEAN       NOT NULL DEFAULT FALSE,
+  access_tier     VARCHAR(20)   NOT NULL DEFAULT 'free'
+                    CHECK (access_tier IN ('free', 'paid', 'institutional', 'admin')),
+  email_verified  BOOLEAN       NOT NULL DEFAULT FALSE,
+  created_at      TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ   NOT NULL DEFAULT NOW()
+);
+```
+
+No separate sessions table — JWT is stateless. `is_admin` is the gate for all admin routes.
+`access_tier` is reserved for future public user tiers (free/paid/institutional).
+
+### Environment variables
+
+```env
+JWT_SECRET=   # generate: node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+```
+
+Admin credentials are NOT stored in env vars — they live in `user_accounts`. Use the
+`create-admin` script (see below) to seed the first admin user.
+
+### Auth middleware (`server/middleware/auth.ts`)
+
+```typescript
+import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
+
+export interface AdminPayload {
+  sub: string;
+  email: string;
+  is_admin: boolean;
+}
+
+declare global {
+  namespace Express {
+    interface Request { admin?: AdminPayload; }
+  }
+}
+
+export function requireAdmin(req: Request, res: Response, next: NextFunction): void {
+  const header = req.headers.authorization;
+  if (!header?.startsWith('Bearer ')) {
+    res.status(401).json({ success: false, error: 'Unauthorized' });
+    return;
+  }
+  try {
+    const payload = jwt.verify(header.slice(7), process.env.JWT_SECRET!) as AdminPayload;
+    req.admin = payload;
+    next();
+  } catch {
+    res.status(401).json({ success: false, error: 'Invalid or expired token' });
+  }
+}
+```
+
+### Auth routes (`server/routes/auth.ts`)
+
+```
+POST /api/auth/login   — public; verifies email+password, returns 7-day JWT
+GET  /api/auth/me      — requireAdmin; returns token payload (used for session check)
+```
+
+Login verifies `is_admin: true` before issuing a token — non-admin accounts cannot log in to the admin panel.
+
+### Seeding the first admin user (`server/scripts/create-admin.ts`)
+
+```typescript
+import bcrypt from 'bcryptjs';
+import { pool } from '../db/connection';
+
+async function run() {
+  const email = process.env.ADMIN_EMAIL;
+  const password = process.env.ADMIN_PASSWORD;
+  if (!email || !password) { console.error('Set ADMIN_EMAIL and ADMIN_PASSWORD'); process.exit(1); }
+
+  const hash = await bcrypt.hash(password, 12);
+  await pool.query(
+    `INSERT INTO user_accounts (email, password_hash, is_admin, access_tier, email_verified)
+     VALUES ($1, $2, TRUE, 'admin', TRUE)
+     ON CONFLICT (email) DO UPDATE
+       SET password_hash = $2, is_admin = TRUE, updated_at = NOW()`,
+    [email.toLowerCase().trim(), hash]
+  );
+  console.log(`Admin user ${email} created/updated`);
+  await pool.end();
+}
+run().catch(err => { console.error(err); process.exit(1); });
+```
+
+Run once after deploying:
+```
+ADMIN_EMAIL=you@example.com ADMIN_PASSWORD=yourpassword npx tsx scripts/create-admin.ts
+```
+
+Safe to re-run — upserts on email.
+
+### Packages
+
+```
+npm install jsonwebtoken bcryptjs
+npm install --save-dev @types/jsonwebtoken
+```
+
+Note: `bcryptjs` ships its own types — no `@types/bcryptjs` needed.
 
 ---
 
@@ -16,84 +133,69 @@ All three share the same foundation:
 
 ### What it does
 
-Maintains a unified contact record (Person) for every human who interacts with the site —
-newsletter subscribers, contact form senders, commission/inquiry requesters. Records are
-created automatically when forms are submitted (upsert on email), so no manual data entry
-is needed. The admin UI shows a list with activity counts and a detail view with full history.
+Maintains a unified contact record (`admin_people`) for every human who contacts the site.
+Records are created automatically when the contact form is submitted (upsert on email),
+so no manual data entry is needed. The admin UI shows a list with message counts and a
+detail view with editable notes and full message history.
 
-### Data model
+### Data model (SQL)
 
-```prisma
-model Person {
-  id        String   @id @default(cuid())
-  name      String
-  email     String   @unique
-  phone     String?
-  notes     String?
-  tags      String[] @default([])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations — add whichever apply to your site:
-  contacts    ContactMessage[]
-  newsletter  NewsletterSubscriber?
-  orders      Order[]
-  // Add commissions, registrations, etc. as needed
-}
-
-model NewsletterSubscriber {
-  id           String   @id @default(cuid())
-  personId     String   @unique
-  person       Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
-  active       Boolean  @default(true)
-  source       String?
-  subscribedAt DateTime @default(now())
-}
+```sql
+CREATE TABLE admin_people (
+  id          UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
+  email       VARCHAR(255)  UNIQUE NOT NULL,
+  name        VARCHAR(255)  NOT NULL,
+  phone       VARCHAR(50),
+  notes       TEXT,
+  tags        TEXT[]        NOT NULL DEFAULT '{}',
+  created_at  TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ   NOT NULL DEFAULT NOW()
+);
 ```
 
-The key design decision: **Person is the hub, everything else is a spoke.** Each form
-submission (contact, newsletter signup, commission request, event registration) does an
-upsert on Person by email before creating the child record.
+Key design decision: **admin_people is the hub; admin_contact_messages is the spoke.**
+Contact form submissions upsert admin_people by email before creating the message record.
 
 ```typescript
-// Pattern used in every form-handling route:
-const person = await prisma.person.upsert({
-  where: { email },
-  update: {},                              // don't overwrite existing data
-  create: { name, email, phone: phone || null },
-});
-// then create the child record with personId: person.id
+// Pattern used in the contact route:
+const { rows: [person] } = await pool.query(
+  `INSERT INTO admin_people (email, name)
+   VALUES ($1, $2)
+   ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name, updated_at = NOW()
+   RETURNING id`,
+  [email, name]
+);
+// then INSERT INTO admin_contact_messages with person_id: person.id
 ```
 
 ### API routes
 
 ```
-GET  /api/people          [admin] List all people, with _count of related records
-GET  /api/people/:id      [admin] Single person with full relation history
-PATCH /api/people/:id     [admin] Update name, email, phone, notes, tags
-DELETE /api/people/:id    [admin] Delete person and cascade relations
+GET    /api/admin/people       [admin] List all people with message_count
+GET    /api/admin/people/:id   [admin] Single person with full message history
+PATCH  /api/admin/people/:id   [admin] Update name, email, phone, notes, tags
+DELETE /api/admin/people/:id   [admin] Delete person (messages SET NULL on person_id)
 ```
 
-### Frontend component
+PATCH uses `COALESCE($1, column)` so only fields present in the request body are updated.
 
-`AdminPeople.tsx` — two-panel layout:
+### Frontend component (`AdminPeople.tsx`)
 
-- **Left panel**: scrollable list of Person cards showing name, email, activity badges
-  (newsletter, message count, commission count). Narrows when a detail panel is open.
-- **Right panel**: detail view with edit form, newsletter toggle, action buttons
-  (Invoice, Delete), and chronological history of all child records (messages, commissions, etc.)
-- **Copy emails button**: copies all active newsletter subscriber emails to clipboard
-  — useful until a proper broadcast tool is in place.
+Two-panel layout:
+
+- **Left panel**: scrollable list of person cards — name, email, message count, join date.
+  Clicking a card selects it.
+- **Right panel**: detail view with editable notes textarea (Save button), tag pill display,
+  and chronological list of all messages with subject, body, date, and read status.
 
 ### Customizing per site
 
-1. Update the `personInclude` object in `people.ts` to include the relations your site has.
-2. In the frontend, add/remove history sections (contact messages, commissions, registrations, etc.)
-   to match your schema.
-3. The "Invoice" action button in the detail panel is optional — only wire it up if the site
-   has an orders/invoicing tab. Pass `onCreateInvoice` as an optional prop and conditionally render.
-4. Tags (`String[]`) are free-form — use them for whatever segmentation makes sense
-   (collector, student, press, VIP, etc.).
+1. Add relation tables as needed (orders, registrations, etc.) and LEFT JOIN them in
+   the list query to surface counts.
+2. Update the detail panel to show those additional relation types in the history section.
+3. `tags` is a free-form `TEXT[]` — use for whatever segmentation makes sense.
+4. If you add a newsletter signup form, upsert `admin_people` there too and add a
+   `newsletter_subscribers` table linked by `person_id`.
 
 ---
 
@@ -101,91 +203,57 @@ DELETE /api/people/:id    [admin] Delete person and cascade relations
 
 ### What it does
 
-A unified inbox that merges all inbound messages from multiple form types into one view,
-grouped by category. Unread messages are visually highlighted. Admins can expand messages
-inline and mark them read. No separate inbox per form type — everything is in one place.
+Stores all inbound contact form submissions. Unread messages are visually highlighted.
+Admins can expand messages inline and mark them read. No separate inbox per form type —
+extend by adding more message tables and normalizing them in the frontend.
 
-### Data model
+### Data model (SQL)
 
-```prisma
-model ContactMessage {
-  id        String   @id @default(cuid())
-  personId  String?
-  person    Person?  @relation(fields: [personId], references: [id], onDelete: SetNull)
-  name      String
-  email     String
-  phone     String?
-  subject   String
-  message   String
-  read      Boolean  @default(false)
-  createdAt DateTime @default(now())
-}
+```sql
+CREATE TABLE admin_contact_messages (
+  id          UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
+  person_id   UUID          REFERENCES admin_people(id) ON DELETE SET NULL,
+  name        VARCHAR(255)  NOT NULL,
+  email       VARCHAR(255)  NOT NULL,
+  subject     VARCHAR(500)  NOT NULL,
+  message     TEXT          NOT NULL,
+  read        BOOLEAN       NOT NULL DEFAULT FALSE,
+  created_at  TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ   NOT NULL DEFAULT NOW()
+);
 ```
 
-Duplicate `name`/`email` on the message itself (don't rely solely on the Person relation)
-so messages remain readable even if a Person record is later deleted.
-
-For sites with commission/booking/inquiry forms, add those as separate models with their
-own status workflows — the inbox component merges them at the frontend level rather than
-at the DB level, which keeps the models clean.
+`name`/`email` are duplicated on the message itself (not only on the Person relation)
+so messages remain readable if a Person record is later deleted.
 
 ### API routes
 
 ```
-POST  /api/contact           Public — create message, upsert Person, optionally send email notification
-GET   /api/contact           [admin] List all messages, newest first
+POST  /api/contact           Public — upsert admin_people, create message
+GET   /api/contact           [admin] List all messages with person tags, newest first
 PATCH /api/contact/:id/read  [admin] Mark a message read
 ```
 
-Email notification on submission is fire-and-forget (do not `await` it — never let email
-failure block the user's form submit response). Use Resend, SendGrid, or Formspree:
+No email notification is sent on submission in the current implementation — messages
+are stored in the DB and surfaced in the admin inbox. If you need email notification,
+add a fire-and-forget fetch to Resend or SendGrid after the INSERT (do not await it —
+never let email failure block the user's form submit response).
 
-```typescript
-// Fire-and-forget email pattern:
-if (process.env.NOTIFICATION_EMAIL_ENDPOINT) {
-  fetch(endpoint, { method: 'POST', body: JSON.stringify(payload) })
-    .catch((err) => console.error('[email] notification failed:', err));
-}
-res.status(201).json({ success: true });  // respond immediately
-```
+### Frontend component (`AdminContact.tsx`)
 
-### Frontend component
-
-`AdminContact.tsx` — single-column inbox:
-
-- Fetches from all relevant API endpoints in parallel (`Promise.all`)
-- Normalizes all message types into a common `Item` shape
-- Groups into categories using a `classify(subject)` function — adapt the category
-  names and classification logic to your site's form types
-- Renders groups in a fixed priority order (most actionable first)
-- Unread badge count in the page header
-- Expand/collapse message body inline — no separate detail page needed
-
-```typescript
-// Normalize all message types into one shape:
-interface Item {
-  id: string;
-  kind: 'contact' | 'commission' | 'booking';  // extend as needed
-  group: string;                                 // display category
-  name: string;
-  email: string;
-  subject: string;
-  body: string;
-  read: boolean;
-  createdAt: string;
-  meta?: string;  // secondary info line (e.g. "Size: 24x36 · Budget: $2,000")
-}
-```
+- Fetches from `GET /api/contact` on mount
+- Groups into **Unread** (green dot, highlighted border) and **Read** sections
+- Each message row: name, email, subject, time-ago timestamp; click to expand full body
+- **Mark read** button on expanded unread messages updates state optimistically
 
 ### Customizing per site
 
-1. Update `Promise.all` to fetch from whatever form endpoints your site has.
-2. Update the `classify(subject)` function to map subject strings to your category names.
-3. Update `groupOrder` and `groupLabels` to match your categories.
-4. The `meta` field is a formatted string of structured fields (size, budget, deadline, status)
-   — build it per message type in the normalization step.
-5. "Mark read" only applies to `ContactMessage` records. Commission/booking status changes
-   happen in their own dedicated admin section — the inbox is read-only for those.
+1. Add more form types (commission requests, event registrations, etc.) as separate tables.
+2. In `AdminContact.tsx`, fetch from all relevant endpoints in parallel (`Promise.all`)
+   and normalize into a common `Item` shape before rendering.
+3. Add a `classify(subject)` function to group messages by category if needed.
+4. "Mark read" only applies to contact messages. Other message types with their own
+   status workflows belong in dedicated admin sections.
 
 ---
 
@@ -193,69 +261,59 @@ interface Item {
 
 ### What it does
 
-Pulls traffic data from Cloudflare's GraphQL Analytics API and renders it in the admin
-dashboard. No third-party analytics service, no cookies, no tracking scripts required for
-basic visitor counts. Richer data (top pages, referrers, device types) requires adding
-Cloudflare's free Web Analytics beacon to the site's `<head>`.
+Pulls traffic data from Cloudflare's Zone Analytics GraphQL API and renders it in the
+admin dashboard. No third-party analytics service, no cookies, no tracking scripts
+required for basic visitor counts.
 
 ### Prerequisites
 
 The site's domain must be proxied through Cloudflare (orange cloud in DNS settings).
-This is required for Zone Analytics — the core visitor count data. Web Analytics (RUM)
-can work on any domain, even without Cloudflare proxying, but requires a JS beacon.
+This is required for Zone Analytics — the core visitor count data. Data is aggregated
+by day and is always 1 day behind (today's traffic appears tomorrow).
 
 ### Environment variables (server)
 
 ```env
-CF_ANALYTICS_TOKEN=    # API token — Cloudflare → My Profile → API Tokens
-                       # Use "Read analytics for a zone" template
-                       # Scope to the specific zone (domain) only
-CF_ZONE_ID=            # Cloudflare dashboard → domain overview → right sidebar
-CF_ACCOUNT_ID=         # Same location as Zone ID
-CF_WEB_ANALYTICS_SITE_TAG=   # Optional — enables top pages / referrers / device data
+CF_ANALYTICS_TOKEN=   # Cloudflare → My Profile → API Tokens
+                      # Use "Read analytics and logs" template
+                      # Permissions: Zone Analytics only
+                      # Zone resources: specific zone (your domain)
+CF_ZONE_ID=           # Cloudflare dashboard → click your domain → right sidebar under API
 ```
 
-Create one token per domain. Scoping to a specific zone means a leaked token for one
-site cannot read analytics from another.
+Create one token per domain, scoped to that zone only. A leaked token can only read
+analytics for one site. Skip client IP filtering — Railway (and most hosts) use dynamic IPs.
 
-### API route
+### API route (`server/routes/analytics.ts`)
 
-`server/src/routes/analytics.ts` — `GET /api/analytics?range=30`
+`GET /api/analytics?range=7|14|30` — protected by `requireAdmin`
 
-- Protected by `requireAdmin`
-- Accepts `range` param: 7, 14, or 30 (days)
+- Accepts `range` param: 7, 14, or 30 (days). Defaults to 30, clamped to [7, 30].
 - Queries Cloudflare GraphQL `httpRequests1dGroups` for daily aggregates
-- Aggregates country data across all days, sorted by share
-- 15-minute in-memory cache — avoids hammering Cloudflare API on every tab open
-- Returns `source: 'cloudflare'` so the frontend can distinguish live vs. fallback data
+- Aggregates country data across all days, sorted by share (top 8 returned)
+- 15-minute in-memory `Map` cache — Cloudflare's daily data doesn't change intra-day
+- Returns `{ daily, totals, countries, source: 'cloudflare', range }`
 
-```typescript
-// Cloudflare GraphQL query (Zone Analytics):
-const query = `
-  query($zoneTag: String!, $startDate: Date!, $endDate: Date!) {
-    viewer {
-      zones(filter: { zoneTag: $zoneTag }) {
-        httpRequests1dGroups(
-          limit: 31
-          filter: { date_geq: $startDate, date_leq: $endDate }
-          orderBy: [date_ASC]
-        ) {
-          dimensions { date }
-          uniq { uniques }
-          sum { requests pageViews bytes countryMap { clientCountryName requests } }
-        }
-      }
-    }
-  }
-`;
-```
+Important: `$zoneTag: String!` in the GraphQL query must use capital-S `String` —
+lowercase `string` is silently rejected by Cloudflare.
 
-Note: `$zoneTag: String!` must be capital-S String — lowercase `string` is a GraphQL
-type error that Cloudflare will reject silently.
+Uses `axios` (already a server dependency) rather than `fetch` for the Cloudflare call.
 
-### Web Analytics beacon (optional)
+### Frontend component (`AdminAnalytics.tsx`)
 
-Add once to `index.html` to unlock top pages, referrers, and device type data:
+- Range selector: 7d / 14d / 30d pill buttons, each triggers a fresh API fetch
+- **Stat cards**: Unique Visitors, Page Views, Total Requests, Bandwidth
+- **Line chart**: Unique Visitors + Page Views over time (Recharts `LineChart`)
+- **Country breakdown**: horizontal progress bars, top 8 countries by request share
+- **Device type / Top Pages / Top Referrers**: placeholder sections labeled
+  "Requires Cloudflare Web Analytics beacon"
+
+When `CF_ANALYTICS_TOKEN` or `CF_ZONE_ID` are not set, the route returns 503 and
+the frontend shows a clear configuration message rather than breaking.
+
+### Web Analytics beacon (optional — unlocks device/page/referrer data)
+
+Add once to `index.html`:
 
 ```html
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js"
@@ -263,89 +321,91 @@ Add once to `index.html` to unlock top pages, referrers, and device type data:
 ```
 
 Generate the site tag: Cloudflare Dashboard → Web Analytics → Add a site.
-The RUM dataset is `rumPageloadEventsAdaptiveGroups` — a separate GraphQL query
-from Zone Analytics.
+The RUM dataset uses a separate GraphQL query (`rumPageloadEventsAdaptiveGroups`).
 
-### Frontend component
+### Data retention
 
-`AdminAnalytics.tsx` — requires `recharts` (`npm install recharts`):
-
-- Range selector: 7d / 14d / 30d pill buttons, each triggers a fresh API fetch
-- **Stat cards**: Unique Visitors, Page Views, Total Requests
-- **Line chart**: Unique Visitors + Page Views over time (`LineChart` from Recharts)
-- **Country breakdown**: horizontal progress bars, top 5 + Other
-- **Device type bar chart**: mock data until RUM beacon is active — labeled accordingly
-- **Top Pages / Top Referrers tables**: mock data until RUM beacon — labeled accordingly
-- Falls back to mock data automatically if the API call fails, so the tab never breaks
-
-### Data retention beyond 30 days
-
-Cloudflare keeps 30 days on all paid plans. To build longer-term trend data, add a
-`DailyAnalytics` table to your schema and have the backend write each day's aggregate
-after fetching it:
-
-```prisma
-model DailyAnalytics {
-  id             String   @id @default(cuid())
-  date           DateTime @unique
-  uniqueVisitors Int
-  pageViews      Int
-  requests       Int
-  bandwidthBytes BigInt
-  createdAt      DateTime @default(now())
-}
-```
-
-Write the aggregate in the route after a successful Cloudflare fetch (upsert on date).
-Then for date ranges beyond 30 days, fall back to your local DB instead of Cloudflare.
+Cloudflare keeps 30 days. The current implementation queries Cloudflare directly —
+no local DB persistence. To build longer-term trend data, add a `DailyAnalytics` table
+and write each day's aggregate after fetching (upsert on date). Query local DB for
+ranges beyond 30 days.
 
 ### Customizing per site
 
-1. Copy `analytics.ts` to the new site's server, update the route mount in `index.ts`.
-2. Add the four env vars to Railway (or whatever host).
+1. Copy `analytics.ts` to the new site's server. Mount at `/api/analytics` in `index.ts`.
+2. Add `CF_ANALYTICS_TOKEN` and `CF_ZONE_ID` to the host's environment variables.
 3. Copy `AdminAnalytics.tsx` to the new site's frontend. The chart and stat cards are
-   completely generic — no site-specific references.
-4. Add the Analytics tab to the site's `AdminLayout` tabs array and wire it in `Admin.tsx`.
-5. The mock data constants at the top of the frontend file are only shown on error/fallback —
-   update them to plausible numbers for the new site if desired.
+   completely site-agnostic.
+4. Add the Analytics tab to `Admin.tsx`.
 
 ---
 
 ## Shared Infrastructure
 
-These three modules all depend on the same foundations. If you're starting a new site,
-set these up first.
-
 ### Auth middleware
 
-```typescript
-// server/src/middleware/auth.ts
-import jwt from 'jsonwebtoken';
+See Section 0. `requireAdmin` is imported by all three module route files.
 
-export function requireAdmin(req, res, next) {
-  const header = req.headers.authorization;
-  if (!header?.startsWith('Bearer ')) return res.status(401).json({ error: 'Unauthorized' });
-  try {
-    jwt.verify(header.slice(7), process.env.JWT_SECRET!);
-    next();
-  } catch {
-    res.status(401).json({ error: 'Invalid or expired token' });
+### apiFetch (`client/src/lib/apiFetch.ts`)
+
+The frontend uses a thin `apiFetch` wrapper that attaches the JWT from localStorage
+and sets `Content-Type: application/json`. All admin API calls go through this.
+
+```typescript
+export async function apiFetch<T>(path: string, options?: RequestInit): Promise<{ success: boolean; data: T }> {
+  const token = localStorage.getItem('fmw_admin_token');
+  const res = await fetch(path, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options?.headers ?? {}),
+    },
+  });
+  if (!res.ok) {
+    throw Object.assign(new Error(`HTTP ${res.status}`), { status: res.status });
   }
+  return res.json();
 }
 ```
 
-### apiFetch (frontend)
+Token key: `fmw_admin_token` — rename per site to avoid localStorage collisions if
+multiple FMW-pattern sites are open in the same browser.
 
-The frontend uses a thin `apiFetch` wrapper that attaches the JWT from localStorage and
-sets `Content-Type: application/json` when the body is a string. All admin API calls go
-through this — no raw `fetch` calls in components.
+### Admin login page (`AdminLogin.tsx`)
 
-### Admin layout shell
+Standalone page — no site NavBar/Footer. Posts to `POST /api/auth/login`, stores
+the returned JWT in localStorage, navigates to `/admin` on success.
 
-The tab-based admin layout (`AdminLayout.tsx`) is a standalone component that takes
-`activeTab`, `onTabChange`, and `children`. Adding a new module is two steps:
-1. Add an entry to the `tabs` array in `AdminLayout.tsx`
-2. Add a conditional render in `Admin.tsx`
+### Admin shell (`Admin.tsx`)
 
-No routing changes needed — the admin panel is a single-page tab switcher, not a
-router-based multi-page app.
+On mount: checks localStorage for token → calls `GET /api/auth/me` to verify it's
+still valid → redirects to `/admin/login` if missing or expired.
+
+Tab bar renders Inbox, People, and Analytics tabs. Adding a new module:
+1. Add a tab entry to the tabs array
+2. Add a conditional render block for the new tab's component
+
+No routing changes needed — the admin panel is a single-page tab switcher, not
+a router-based multi-page app.
+
+### Routing in App.tsx
+
+Admin routes are excluded from the public `NavBar`/`Footer` layout by splitting
+`App.tsx` into a `PublicLayout` component (with nav/footer + nested `<Routes>`)
+and top-level admin routes:
+
+```tsx
+export default function App() {
+  return (
+    <Routes>
+      <Route path="/admin/login" element={<AdminLogin />} />
+      <Route path="/admin"       element={<Admin />} />
+      <Route path="/*"           element={<PublicLayout />} />
+    </Routes>
+  );
+}
+```
+
+Admin routes are excluded from the prerender list — they are auth-gated and
+always served as the SPA shell.
