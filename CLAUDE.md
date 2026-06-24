@@ -20,6 +20,8 @@ The companion documentation set is in `docs/`:
 - `FMW_Vision.md` — site purpose, THM definition, Lens structure, what is deferred
 - `FMW_Architecture.md` — technical reference: schema, data pipeline, API, deployment
 - `FMW_Content.md` — every route, its status, and its content source
+- `FMW_TechStack.md` — as-built tech stack reference (packages, versions, conventions)
+- `REUSABLE_ADMIN_MODULES.md` — JWT auth, CRM, and analytics modules as reusable patterns
 
 ---
 
@@ -53,16 +55,22 @@ freemarketwatch/
 │
 ├── server/
 │   ├── index.ts               ← Express entry point, cron scheduler
+│   ├── middleware/
+│   │   └── auth.ts            ← requireAdmin middleware; attaches req.admin (AdminPayload)
 │   ├── routes/
 │   │   ├── series.ts          ← /api/series endpoints
 │   │   ├── instruments.ts
 │   │   ├── health.ts
-│   │   └── learn.ts           ← /api/learn/thm-charts
+│   │   ├── learn.ts           ← /api/learn/thm-charts
+│   │   ├── auth.ts            ← POST /api/auth/login, GET /api/auth/me
+│   │   ├── contact.ts         ← POST /api/contact (public), GET + PATCH (admin)
+│   │   ├── adminPeople.ts     ← CRUD /api/admin/people (admin only)
+│   │   └── analytics.ts       ← GET /api/analytics (Cloudflare Zone Analytics, admin only)
 │   ├── db/
 │   │   ├── schema.sql         ← canonical schema
 │   │   ├── migrate.ts         ← migration runner
 │   │   ├── connection.ts
-│   │   ├── migrations/        ← 001_initial_schema.sql, 002_m2_gdp_tables.sql
+│   │   ├── migrations/        ← 001_initial_schema.sql, 002_m2_gdp_tables.sql, 003_auth_and_admin.sql
 │   │   ├── queries/
 │   │   └── seeds/             ← thm_historical_data.ts (M2/GDP pre-FRED)
 │   ├── jobs/
@@ -72,6 +80,8 @@ freemarketwatch/
 │   │   ├── fetchEquities.ts
 │   │   ├── fetchM2GDP.ts      ← M2 + GDP from FRED (weekly)
 │   │   └── computePPSeries.ts
+│   ├── scripts/
+│   │   └── create-admin.ts    ← seed first admin user (run once; reads ADMIN_EMAIL/ADMIN_PASSWORD)
 │   └── lib/
 │       ├── thm.ts             ← Analytical THM (2% fallback only)
 │       ├── thm-m2gdp.ts       ← M2/GDP-based THM (primary dashboard)
@@ -84,18 +94,25 @@ freemarketwatch/
 │   │   ├── App.tsx            ← Routes only — no Router (router-agnostic for SSR)
 │   │   ├── main.tsx           ← Client entry: wraps App in BrowserRouter
 │   │   ├── entry-server.tsx   ← SSR entry: wraps App in StaticRouter for prerendering
-│   │   ├── components/
+│   │   │   ├── components/
 │   │   │   ├── NavBar.tsx     ← THE LENS dropdown
 │   │   │   ├── Footer.tsx
 │   │   │   ├── Header.tsx
 │   │   │   ├── ChartPanel.tsx
 │   │   │   ├── DrillDownModal.tsx
-│   │   │   └── THMExplainer.tsx
+│   │   │   ├── THMExplainer.tsx
+│   │   │   └── admin/
+│   │   │       ├── AdminContact.tsx   ← Inbox tab: unread/read messages, mark-read
+│   │   │       ├── AdminPeople.tsx    ← People tab: list + detail panel with notes/tags
+│   │   │       └── AdminAnalytics.tsx ← Analytics tab: Cloudflare stat cards + line chart
 │   │   ├── hooks/
 │   │   │   ├── useSeriesData.ts
 │   │   │   └── useTHMChartData.ts
+│   │   ├── lib/
+│   │   │   └── apiFetch.ts    ← fetch wrapper; attaches JWT from localStorage 'fmw_admin_token'
 │   │   ├── pages/             ← HookPage, Dashboard, About, Contact, LensHub,
-│   │   │                         LensFiat, LensTHM, LensInvesting, LensAdoption, LearnAct
+│   │   │                         LensFiat, LensTHM, LensInvesting, LensAdoption, LearnAct,
+│   │   │                         Admin, AdminLogin
 │   │   ├── content/
 │   │   │   └── acts.ts        ← Six-act educational series
 │   │   └── types/
@@ -189,11 +206,17 @@ Canonical schema is in `server/db/schema.sql`. It is the source of truth — nev
 ## Environment Variables
 
 ```
-DATABASE_URL=postgresql://user:pass@localhost:5432/freemarketwatch
+DATABASE_URL=          # Railway Postgres connection string
 FRED_API_KEY=          # free at fred.stlouisfed.org — required for CPI, FX, M2, GDP
 COINGECKO_API_KEY=     # optional; BTC is currently fetched via CryptoCompare (no key needed)
 PORT=3333
 NODE_ENV=development
+JWT_SECRET=            # 64-byte random hex; generate: node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+CF_ANALYTICS_TOKEN=    # Cloudflare API token — "Read analytics and logs" template, Zone Analytics only
+CF_ZONE_ID=            # Cloudflare dashboard → domain overview → right sidebar
+# Used only by scripts/create-admin.ts (not read at runtime):
+ADMIN_EMAIL=
+ADMIN_PASSWORD=
 ```
 
 Never hardcode secrets. Never commit `.env`. Always provide `.env.example` with key names and descriptions.
@@ -229,7 +252,7 @@ The file follows the [llms.txt standard](https://llmstxt.org): plain markdown, o
 ## What Not To Do
 
 - Do not editorialize in UI copy — let the data speak
-- Do not build user auth yet — schema supports it, implementation is deferred
+- Do not add public user registration or email verification — schema supports it but implementation is deferred
 - Do not call APIs repeatedly for data already in the DB
 - Do not use `any` types in TypeScript
 - Do not make the BTC toggle subtle — it is a featured educational element
@@ -254,6 +277,10 @@ The site is fully operational. All data pipelines are live. All Lens content is 
 - Bitcoin/THM framing live: THMExplainer, About, and LensTHM all state the fixed-supply connection explicitly
 - SEO prerendering: 14 static routes prerendered at build time; robots.txt + sitemap.xml
 - Deployment to Railway + Cloudflare
+- JWT auth (`user_accounts` table, bcryptjs cost 12, 7-day tokens) with `requireAdmin` middleware
+- Admin panel at `/admin` — Inbox (contact messages), People CRM, Cloudflare Analytics tabs
+- Contact form posts to `/api/contact` (Formspree removed); auto-creates `admin_people` record on submission
+- Cloudflare Zone Analytics: daily aggregates, 15-min in-memory cache, stat cards + line chart in admin
 
 **What is deferred (see FMW_Content.md for detail):**
 - Dashboard THM toggle (switch between CPI/M2GDP/M2RAW definitions)
@@ -267,6 +294,9 @@ The site is fully operational. All data pipelines are live. All Lens content is 
 - Deployment: Railway + Cloudflare
 - Purchasing power deflator: M2/GDP basis (not CPI) — consistent with THM benchmark
 - CPI (FRED CPIAUCNS): retained in DB and fetched, used only for THM_CPI variant on /lens/thm
+- Admin routing: `App.tsx` splits into `PublicLayout` (NavBar + Footer) and top-level `/admin` + `/admin/login` routes with no nav chrome; admin routes excluded from prerender
+- Contact backend: Formspree removed; contact form POSTs to `/api/contact`; `admin_people` records created automatically on every contact submission (upsert on email)
+- Auth storage: JWT in `localStorage` key `fmw_admin_token`; no session table (stateless)
 
 ---
 
